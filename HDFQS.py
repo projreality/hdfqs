@@ -70,7 +70,10 @@ class HDFQS:
         data = numpy.concatenate(( data, data_from_file ));
       fd.close();
 
-    return data;
+    if (data is None):
+      return numpy.transpose(numpy.array([ [ ], [ ] ]));
+    else:
+      return data;
 
 ################################################################################
 ############################### INITIALIZE FILE ################################
