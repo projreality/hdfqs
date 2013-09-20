@@ -2,7 +2,8 @@ from tables import *
 
 class HDFQS:
 
-  def __init__(self, filename):
+  @staticmethod
+  def initialize_file(filename):
     fd = openFile(filename, mode="w");
     root = fd.root;
 
