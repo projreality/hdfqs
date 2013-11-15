@@ -20,15 +20,16 @@ class HDFQS:
 ################################################################################
   def register(self, filename):
     fd = openFile(filename, mode="r");
-    for group in fd.root:
-      for table in group:
-        tm = [ x["time"] for x in table ];
-        path = "/" + group._v_name + "/" + table.name;
-        if (not self.manifest.has_key(path)):
-          self.manifest[path] = [ { "filename": filename, "start": tm[0], "stop": tm[-1] } ];
-        elif (len(tm) > 0):
-          self.manifest[path].append({ "filename": filename, "start": tm[0], "stop": tm[-1] });
-        self.manifest["FILES"].append(filename);
+    for location in fd.root:
+      for group in location:
+        for table in group:
+          tm = [ x["time"] for x in table ];
+          path = "/" + location._v_name + "/" + group._v_name + "/" + table.name;
+          if (not self.manifest.has_key(path)):
+            self.manifest[path] = [ { "filename": filename, "start": tm[0], "stop": tm[-1] } ];
+          elif (len(tm) > 0):
+            self.manifest[path].append({ "filename": filename, "start": tm[0], "stop": tm[-1] });
+          self.manifest["FILES"].append(filename);
     fd.close();
 
 ################################################################################
