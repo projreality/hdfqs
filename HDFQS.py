@@ -24,7 +24,7 @@ class HDFQS:
         path = "/" + group._v_name + "/" + table.name;
         if (not self.manifest.has_key(path)):
           self.manifest[path] = [ { "filename": filename, "start": tm[0], "stop": tm[-1] } ];
-        else:
+        elif (len(tm) > 0):
           self.manifest[path].append({ "filename": filename, "start": tm[0], "stop": tm[-1] });
     fd.close();
 
@@ -64,10 +64,11 @@ class HDFQS:
       fd = openFile(f, mode="r");
       t = fd.getNode(path);
       data_from_file = numpy.ma.array([ [ x[time_field], x[value_field] ] for x in fd.getNode(path).where("(%s >= %d) & (%s <= %d)" % ( time_field, start, time_field, stop )) ]);
-      if (data is None):
-        data = data_from_file;
-      else:
-        data = numpy.concatenate(( data, data_from_file ));
+      if (len(data_from_file) > 0):
+        if (data is None):
+          data = data_from_file;
+        else:
+          data = numpy.concatenate(( data, data_from_file ));
       fd.close();
 
     if (data is None):
