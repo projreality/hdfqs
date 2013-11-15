@@ -57,13 +57,23 @@ class HDFQS:
 ################################################################################
 ##################################### LOAD #####################################
 ################################################################################
-  def load(self, path, start, stop, time_field="time", value_field="value"):
+  def load(self, path, start, stop, numpts=0, time_field="time", value_field="value"):
     files = self.query(path, start, stop);
     data = None;
     for f in files:
       fd = openFile(f, mode="r");
       t = fd.getNode(path);
-      data_from_file = numpy.ma.array([ [ x[time_field], x[value_field] ] for x in fd.getNode(path).where("(%s >= %d) & (%s <= %d)" % ( time_field, start, time_field, stop )) ]);
+      if (numpts == 0): # load all points
+        data_from_file = numpy.ma.array([ [ x[time_field], x[value_field] ] for x in fd.getNode(path).where("(%s >= %d) & (%s <= %d)" % ( time_field, start, time_field, stop )) ]);
+      else:
+        temp = t[0:2];
+        time_res = t[1][time_field] - t[0][time_field];
+        stride_time = (stop - start) / numpy.float64(numpts);
+        stride = int(numpy.floor(stride_time / time_res));
+        if (stride > 0):
+          data_from_file = numpy.ma.array([ [ x[time_field], x[value_field] ] for x in fd.getNode(path).where("(%s >= %d) & (%s <= %d)" % ( time_field, start, time_field, stop ), step=stride) ]);
+        else: # more pixels than datapoints in time range
+          data_from_file = numpy.ma.array([ [ x[time_field], x[value_field] ] for x in fd.getNode(path).where("(%s >= %d) & (%s <= %d)" % ( time_field, start, time_field, stop )) ]);
       if (len(data_from_file) > 0):
         if (data is None):
           data = data_from_file;
