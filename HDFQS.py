@@ -8,8 +8,10 @@ class HDFQS:
 ################################################################################
 ################################# CONSTRUCTOR ##################################
 ################################################################################
-  def __init__(self, path=None):
-    self.manifest = { };
+  def __init__(self, path=None, manifest={ }):
+    self.manifest = manifest;
+    if (not self.manifest.has_key("FILES")):
+      self.manifest["FILES"] = [ ];
     if (path is not None):
       self.register_directory(path);
 
@@ -26,6 +28,7 @@ class HDFQS:
           self.manifest[path] = [ { "filename": filename, "start": tm[0], "stop": tm[-1] } ];
         elif (len(tm) > 0):
           self.manifest[path].append({ "filename": filename, "start": tm[0], "stop": tm[-1] });
+        self.manifest["FILES"].append(filename);
     fd.close();
 
 ################################################################################
@@ -41,7 +44,8 @@ class HDFQS:
         if (not is_hdf5.match(filename)):
           continue;
         full_path = os.path.join(direntry[0], filename);
-        self.register(full_path);
+        if (full_path not in self.manifest["FILES"]):
+          self.register(full_path);
 
 ################################################################################
 #################################### QUERY #####################################
