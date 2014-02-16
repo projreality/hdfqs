@@ -20,15 +20,18 @@ class HDFQS:
 ################################################################################
   def register(self, filename):
     fd = openFile(filename, mode="r");
-    for group in fd.root:
-      for table in group:
-        tm = [ x["time"] for x in table ];
-        path = "/" + group._v_name + "/" + table.name;
-        if (not self.manifest.has_key(path)):
-          self.manifest[path] = [ { "filename": filename, "start": tm[0], "stop": tm[-1] } ];
-        elif (len(tm) > 0):
-          self.manifest[path].append({ "filename": filename, "start": tm[0], "stop": tm[-1] });
-        self.manifest["FILES"].append(filename);
+    self.manifest["FILES"].append(filename);
+    for location in fd.root:
+      for group in location:
+        for table in group:
+          if (type(table) != Table):
+            continue;
+          tm = [ x["time"] for x in table ];
+          path = "/" + location._v_name + "/" + group._v_name + "/" + table.name;
+          if (not self.manifest.has_key(path)):
+            self.manifest[path] = [ { "filename": filename, "start": tm[0], "stop": tm[-1] } ];
+          elif (len(tm) > 0):
+            self.manifest[path].append({ "filename": filename, "start": tm[0], "stop": tm[-1] });
     fd.close();
 
 ################################################################################
@@ -67,6 +70,8 @@ class HDFQS:
     for f in files:
       fd = openFile(f, mode="r");
       t = fd.getNode(path);
+      if (len(t) < 2):
+        continue;
       if (numpts == 0): # load all points
         data_from_file = numpy.ma.array([ [ x[time_field], x[value_field] ] for x in fd.getNode(path).where("(%s >= %d) & (%s <= %d)" % ( time_field, start, time_field, stop )) ]);
       else:
