@@ -70,6 +70,8 @@ class HDFQS:
     for f in files:
       fd = openFile(f, mode="r");
       t = fd.getNode(path);
+      if (len(t) < 2):
+        continue;
       if (numpts == 0): # load all points
         data_from_file = numpy.ma.array([ [ x[time_field], x[value_field] ] for x in fd.getNode(path).where("(%s >= %d) & (%s <= %d)" % ( time_field, start, time_field, stop )) ]);
       else:
