@@ -96,6 +96,21 @@ class HDFQS:
       return data;
 
 ################################################################################
+################################## GET FIELDS ##################################
+################################################################################
+  def get_fields(self, path):
+    files = self.query(path, 0, numpy.Inf);
+    if (len(files) == 0):
+      raise Exception("Nonexistant path: \"%s\"" % path);
+    else:
+      filename = files[0];
+      fd = openFile(filename);
+      table = fd.getNode(path);
+      fields = table.colnames;
+      fd.close();
+      return fields;
+
+################################################################################
 ############################### INITIALIZE FILE ################################
 ################################################################################
   @staticmethod
