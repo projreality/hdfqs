@@ -38,17 +38,20 @@ class HDFQS:
 ############################## REGISTER DIRECTORY ##############################
 ################################################################################
   def register_directory(self, path):
-    git_dir = re.compile("^" + path + "/.git");
+    i = 0;
     is_hdf5 = re.compile("^.*\.h5$");
-    for direntry in os.walk(path):
-      if (git_dir.match(direntry[0])):
+    for subdir in os.listdir(path):
+      if ((subdir == ".git") or (subdir == "raw")):
         continue;
-      for filename in direntry[2]:
-        if (not is_hdf5.match(filename)):
-          continue;
-        full_path = os.path.join(direntry[0], filename);
-        if (full_path not in self.manifest["FILES"]):
-          self.register(full_path);
+      for direntry in os.walk(os.path.join(path, subdir)):
+        for filename in direntry[2]:
+          if (not is_hdf5.match(filename)):
+            i=i+1;
+            continue;
+          full_path = os.path.join(direntry[0], filename);
+          if (full_path not in self.manifest["FILES"]):
+            print full_path;
+            self.register(full_path);
 
 ################################################################################
 #################################### QUERY #####################################
