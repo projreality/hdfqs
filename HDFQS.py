@@ -26,6 +26,8 @@ class HDFQS:
         for table in group:
           if (type(table) != Table):
             continue;
+          if (table.shape == ( 0, )):
+            continue;
           tm = [ x["time"] for x in table ];
           path = "/" + location._v_name + "/" + group._v_name + "/" + table.name;
           if (not self.manifest.has_key(path)):
@@ -112,6 +114,33 @@ class HDFQS:
       fields = table.colnames;
       fd.close();
       return fields;
+
+################################################################################
+#################################### CLEAN #####################################
+################################################################################
+  def clean(self, filename, min_time=31536000000000000L):
+    fd = openFile(filename, mode="a");
+
+    g = fd.root;
+    for loc in g._v_children.items():
+      loc = loc[1];
+      for cat in loc._v_children.items():
+        cat = cat[1];
+        for t in cat._v_children.items():
+          t = t[1];
+          bad_rows = t.read_where("time < min_time", { "min_time": min_time });
+          if (bad_rows.shape[0] == 0):
+            continue;
+          tname = t.name;
+          tnew = fd.createTable(cat, "%s_new" % ( tname ), t.description, t.title, filters=t.filters);
+          t.attrs._f_copy(tnew);
+          t.append_where(tnew, "time >= min_time", { "min_time": min_time });
+          tnew.flush();
+          old_size = t.shape[0];
+          t.remove();
+          tnew.move(None, tname);
+
+    fd.close();
 
 ################################################################################
 ############################### INITIALIZE FILE ################################
