@@ -120,6 +120,7 @@ class HDFQS:
 ################################################################################
   def clean(self, filename, min_time=31536000000000000L):
     fd = openFile(filename, mode="a");
+    print filename;
 
     g = fd.root;
     for loc in g._v_children.items():
@@ -131,16 +132,32 @@ class HDFQS:
           bad_rows = t.read_where("time < min_time", { "min_time": min_time });
           if (bad_rows.shape[0] == 0):
             continue;
+          x = "-%s,%d" % ( t.name, t.shape[0] );
           tname = t.name;
           tnew = fd.createTable(cat, "%s_new" % ( tname ), t.description, t.title, filters=t.filters);
           t.attrs._f_copy(tnew);
           t.append_where(tnew, "time >= min_time", { "min_time": min_time });
           tnew.flush();
-          old_size = t.shape[0];
           t.remove();
           tnew.move(None, tname);
+          x = "%s,%d,%d" % ( x, tnew.shape[0], bad_rows.shape[0] );
+          print x;
 
     fd.close();
+
+################################################################################
+############################### CLEAN DIRECTORY ################################
+################################################################################
+  def clean_directory(self, path):
+    for filename in os.listdir(path):
+      if ((filename == ".git") or (filename == "raw")):
+        continue;
+
+      full_path = os.path.join(path, filename);
+      if (os.path.isdir(full_path)):
+        self.clean_directory(full_path);
+      elif (filename[-3:] == ".h5"):
+        self.clean(full_path);
 
 ################################################################################
 ############################### INITIALIZE FILE ################################
