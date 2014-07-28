@@ -129,19 +129,25 @@ class HDFQS:
         cat = cat[1];
         for t in cat._v_children.items():
           t = t[1];
+
+          # Check for time before minimum
           bad_rows = t.read_where("time < min_time", { "min_time": min_time });
-          if (bad_rows.shape[0] == 0):
-            continue;
-          x = "-%s,%d" % ( t.name, t.shape[0] );
-          tname = t.name;
-          tnew = fd.createTable(cat, "%s_new" % ( tname ), t.description, t.title, filters=t.filters);
-          t.attrs._f_copy(tnew);
-          t.append_where(tnew, "time >= min_time", { "min_time": min_time });
-          tnew.flush();
-          t.remove();
-          tnew.move(None, tname);
-          x = "%s,%d,%d" % ( x, tnew.shape[0], bad_rows.shape[0] );
-          print x;
+          if (bad_rows.shape[0] > 0):
+            x = "-%s,%d" % ( t.name, t.shape[0] );
+            tname = t.name;
+            tnew = fd.createTable(cat, "%s_new" % ( tname ), t.description, t.title, filters=t.filters);
+            t.attrs._f_copy(tnew);
+            t.append_where(tnew, "time >= min_time", { "min_time": min_time });
+            tnew.flush();
+            t.remove();
+            tnew.move(None, tname);
+            x = "%s,%d,%d" % ( x, tnew.shape[0], bad_rows.shape[0] );
+            print x;
+
+          # Check for existance of time index
+          if (not t.cols.time.is_indexed):
+            print "*%s" % ( t.name );
+            t.cols.time.create_csindex();
 
     fd.close();
 
