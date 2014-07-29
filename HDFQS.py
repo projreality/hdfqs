@@ -8,12 +8,19 @@ class HDFQS:
 ################################################################################
 ################################# CONSTRUCTOR ##################################
 ################################################################################
-  def __init__(self, path=None, manifest={ }):
-    self.manifest = manifest;
-    if (not self.manifest.has_key("FILES")):
-      self.manifest["FILES"] = [ ];
+  def __init__(self, path=None):
     if (path is not None):
-      self.register_directory(path);
+      manifest_path = os.path.join(path, "manifest.py");
+      if (os.path.exists(manifest_path)):
+        temp = { };
+        execfile(manifest_path, temp);
+        self.manifest = temp["manifest"];
+      else:
+        self.manifest = { "FILES": [ ] };
+      if (self.register_directory(path)):
+        fd = open(manifest_path, "w");
+        fd.write("manifest = " + repr(self.manifest) + "\n");
+        fd.close();
 
 ################################################################################
 ################################### REGISTER ###################################
@@ -46,6 +53,7 @@ class HDFQS:
   def register_directory(self, path):
     i = 0;
     is_hdf5 = re.compile("^.*\.h5$");
+    changed = False;
     for subdir in os.listdir(path):
       if ((subdir == ".git") or (subdir == "raw")):
         continue;
@@ -58,6 +66,9 @@ class HDFQS:
           if (full_path not in self.manifest["FILES"]):
             print full_path;
             self.register(full_path);
+            changed = True;
+
+    return changed;
 
 ################################################################################
 #################################### QUERY #####################################
