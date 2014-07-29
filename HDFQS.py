@@ -9,15 +9,16 @@ class HDFQS:
 ################################# CONSTRUCTOR ##################################
 ################################################################################
   def __init__(self, path=None):
-    if (path is not None):
-      manifest_path = os.path.join(path, "manifest.py");
+    self.path = path;
+    if (self.path is not None):
+      manifest_path = os.path.join(self.path, "manifest.py");
       if (os.path.exists(manifest_path)):
         temp = { };
         execfile(manifest_path, temp);
         self.manifest = temp["manifest"];
       else:
         self.manifest = { "FILES": [ ] };
-      if (self.register_directory(path)):
+      if (self.register_directory()):
         fd = open(manifest_path, "w");
         fd.write("manifest = " + repr(self.manifest) + "\n");
         fd.close();
@@ -50,7 +51,8 @@ class HDFQS:
 ################################################################################
 ############################## REGISTER DIRECTORY ##############################
 ################################################################################
-  def register_directory(self, path):
+  def register_directory(self, path=""):
+    path = os.path.join(self.path, path);
     i = 0;
     is_hdf5 = re.compile("^.*\.h5$");
     changed = False;
