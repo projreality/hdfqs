@@ -19,12 +19,18 @@ class HDFQS:
 ################################### REGISTER ###################################
 ################################################################################
   def register(self, filename):
-    fd = openFile(filename, mode="r");
+    try:
+      fd = openFile(filename, mode="r");
+    except IOError:
+      print "Error opening file %s" % ( filename );
+      return;
     self.manifest["FILES"].append(filename);
     for location in fd.root:
       for group in location:
         for table in group:
           if (type(table) != Table):
+            continue;
+          if (table.shape == ( 0, )):
             continue;
           tm = [ x["time"] for x in table ];
           path = "/" + location._v_name + "/" + group._v_name + "/" + table.name;
@@ -38,17 +44,20 @@ class HDFQS:
 ############################## REGISTER DIRECTORY ##############################
 ################################################################################
   def register_directory(self, path):
-    git_dir = re.compile("^" + path + "/.git");
+    i = 0;
     is_hdf5 = re.compile("^.*\.h5$");
-    for direntry in os.walk(path):
-      if (git_dir.match(direntry[0])):
+    for subdir in os.listdir(path):
+      if ((subdir == ".git") or (subdir == "raw")):
         continue;
-      for filename in direntry[2]:
-        if (not is_hdf5.match(filename)):
-          continue;
-        full_path = os.path.join(direntry[0], filename);
-        if (full_path not in self.manifest["FILES"]):
-          self.register(full_path);
+      for direntry in os.walk(os.path.join(path, subdir)):
+        for filename in direntry[2]:
+          if (not is_hdf5.match(filename)):
+            i=i+1;
+            continue;
+          full_path = os.path.join(direntry[0], filename);
+          if (full_path not in self.manifest["FILES"]):
+            print full_path;
+            self.register(full_path);
 
 ################################################################################
 #################################### QUERY #####################################
@@ -94,6 +103,84 @@ class HDFQS:
       return numpy.transpose(numpy.array([ [ ], [ ] ]));
     else:
       return data;
+
+################################################################################
+################################## GET FIELDS ##################################
+################################################################################
+  def get_fields(self, path):
+    files = self.query(path, 0, numpy.Inf);
+    if (len(files) == 0):
+      raise Exception("Nonexistant path: \"%s\"" % path);
+    else:
+      filename = files[0];
+      fd = openFile(filename);
+      table = fd.getNode(path);
+      fields = table.colnames;
+      fd.close();
+      return fields;
+
+################################################################################
+#################################### CLEAN #####################################
+################################################################################
+  def clean(self, filename, min_time=31536000000000000L, index=True):
+    fd = openFile(filename, mode="a");
+    print filename;
+
+    g = fd.root;
+    for loc in g._v_children.items():
+      loc = loc[1];
+      for cat in loc._v_children.items():
+        cat = cat[1];
+        for t in cat._v_children.items():
+          t = t[1];
+
+          # Check if table is empty
+          if (t.shape == ( 0, )):
+            print "0%s" % ( t.name );
+            continue;
+
+          # Check for time before minimum
+          bad_rows = t.read_where("time < min_time", { "min_time": min_time });
+          if (bad_rows.shape[0] > 0):
+            x = "-%s,%d" % ( t.name, t.shape[0] );
+            tname = t.name;
+            tnew = fd.createTable(cat, "%s_new" % ( tname ), t.description, t.title, filters=t.filters);
+            t.attrs._f_copy(tnew);
+            t.append_where(tnew, "time >= min_time", { "min_time": min_time });
+            tnew.flush();
+            t.remove();
+            tnew.move(None, tname);
+            x = "%s,%d,%d" % ( x, tnew.shape[0], bad_rows.shape[0] );
+            print x;
+            t = tnew;
+
+          # Check if table is empty
+          if (t.shape == ( 0, )):
+            print "0%s" % ( t.name );
+            continue;
+
+          # Check for existance of time index
+          if (index and (not t.cols.time.is_indexed)):
+            print "*%s" % ( t.name );
+            t.cols.time.create_csindex();
+
+    fd.close();
+
+################################################################################
+############################### CLEAN DIRECTORY ################################
+################################################################################
+  def clean_directory(self, path, no_links=False, min_time=31536000000000000L, index=True):
+    for filename in os.listdir(path):
+      if ((filename == ".git") or (filename == "raw")):
+        continue;
+
+      full_path = os.path.join(path, filename);
+      if (os.path.isdir(full_path)):
+        self.clean_directory(full_path, min_time=min_time, index=index);
+      elif (no_links and os.path.islink(full_path)):
+        continue;
+      elif (filename[-3:] == ".h5"):
+        self.clean(full_path, min_time=min_time, index=index);
 
 ################################################################################
 ############################### INITIALIZE FILE ################################
