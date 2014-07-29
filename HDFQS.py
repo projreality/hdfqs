@@ -11,17 +11,14 @@ class HDFQS:
   def __init__(self, path=None):
     self.path = path;
     if (self.path is not None):
-      manifest_path = os.path.join(self.path, "manifest.py");
-      if (os.path.exists(manifest_path)):
+      self.manifest_path = os.path.join(self.path, "manifest.py");
+      if (os.path.exists(self.manifest_path)):
         temp = { };
-        execfile(manifest_path, temp);
+        execfile(self.manifest_path, temp);
         self.manifest = temp["manifest"];
       else:
         self.manifest = { "FILES": [ ] };
-      if (self.register_directory()):
-        fd = open(manifest_path, "w");
-        fd.write("manifest = " + repr(self.manifest) + "\n");
-        fd.close();
+      self.register_directory();
 
 ################################################################################
 ################################### REGISTER ###################################
@@ -70,7 +67,17 @@ class HDFQS:
             self.register(full_path);
             changed = True;
 
-    return changed;
+    if (changed):
+      fd = open(self.manifest_path, "w");
+      fd.write("manifest = " + repr(self.manifest) + "\n");
+      fd.close();
+
+################################################################################
+############################### RE-REGISTER ALL ################################
+################################################################################
+  def reregister_all(self):
+    self.manifest = { "FILES": [ ] };
+    self.register_directory();
 
 ################################################################################
 #################################### QUERY #####################################
