@@ -19,7 +19,11 @@ class HDFQS:
 ################################### REGISTER ###################################
 ################################################################################
   def register(self, filename):
-    fd = openFile(filename, mode="r");
+    try:
+      fd = openFile(filename, mode="r");
+    except IOError:
+      print "Error opening file %s" % ( filename );
+      return;
     self.manifest["FILES"].append(filename);
     for location in fd.root:
       for group in location:
@@ -118,7 +122,7 @@ class HDFQS:
 ################################################################################
 #################################### CLEAN #####################################
 ################################################################################
-  def clean(self, filename, min_time=31536000000000000L):
+  def clean(self, filename, min_time=31536000000000000L, index=True):
     fd = openFile(filename, mode="a");
     print filename;
 
@@ -129,6 +133,11 @@ class HDFQS:
         cat = cat[1];
         for t in cat._v_children.items():
           t = t[1];
+
+          # Check if table is empty
+          if (t.shape == ( 0, )):
+            print "0%s" % ( t.name );
+            continue;
 
           # Check for time before minimum
           bad_rows = t.read_where("time < min_time", { "min_time": min_time });
@@ -143,9 +152,15 @@ class HDFQS:
             tnew.move(None, tname);
             x = "%s,%d,%d" % ( x, tnew.shape[0], bad_rows.shape[0] );
             print x;
+            t = tnew;
+
+          # Check if table is empty
+          if (t.shape == ( 0, )):
+            print "0%s" % ( t.name );
+            continue;
 
           # Check for existance of time index
-          if (not t.cols.time.is_indexed):
+          if (index and (not t.cols.time.is_indexed)):
             print "*%s" % ( t.name );
             t.cols.time.create_csindex();
 
@@ -154,16 +169,18 @@ class HDFQS:
 ################################################################################
 ############################### CLEAN DIRECTORY ################################
 ################################################################################
-  def clean_directory(self, path):
+  def clean_directory(self, path, no_links=False, min_time=31536000000000000L, index=True):
     for filename in os.listdir(path):
       if ((filename == ".git") or (filename == "raw")):
         continue;
 
       full_path = os.path.join(path, filename);
       if (os.path.isdir(full_path)):
-        self.clean_directory(full_path);
+        self.clean_directory(full_path, min_time=min_time, index=index);
+      elif (no_links and os.path.islink(full_path)):
+        continue;
       elif (filename[-3:] == ".h5"):
-        self.clean(full_path);
+        self.clean(full_path, min_time=min_time, index=index);
 
 ################################################################################
 ############################### INITIALIZE FILE ################################
