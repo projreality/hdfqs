@@ -8,12 +8,17 @@ class HDFQS:
 ################################################################################
 ################################# CONSTRUCTOR ##################################
 ################################################################################
-  def __init__(self, path=None, manifest={ }):
-    self.manifest = manifest;
-    if (not self.manifest.has_key("FILES")):
-      self.manifest["FILES"] = [ ];
-    if (path is not None):
-      self.register_directory(path);
+  def __init__(self, path=None):
+    self.path = path;
+    if (self.path is not None):
+      self.manifest_path = os.path.join(self.path, "manifest.py");
+      if (os.path.exists(self.manifest_path)):
+        temp = { };
+        execfile(self.manifest_path, temp);
+        self.manifest = temp["manifest"];
+      else:
+        self.manifest = { "FILES": [ ] };
+      self.register_directory();
 
 ################################################################################
 ################################### REGISTER ###################################
@@ -43,9 +48,11 @@ class HDFQS:
 ################################################################################
 ############################## REGISTER DIRECTORY ##############################
 ################################################################################
-  def register_directory(self, path):
+  def register_directory(self, path=""):
+    path = os.path.join(self.path, path);
     i = 0;
     is_hdf5 = re.compile("^.*\.h5$");
+    changed = False;
     for subdir in os.listdir(path):
       if ((subdir == ".git") or (subdir == "raw")):
         continue;
@@ -58,6 +65,19 @@ class HDFQS:
           if (full_path not in self.manifest["FILES"]):
             print full_path;
             self.register(full_path);
+            changed = True;
+
+    if (changed):
+      fd = open(self.manifest_path, "w");
+      fd.write("manifest = " + repr(self.manifest) + "\n");
+      fd.close();
+
+################################################################################
+############################### RE-REGISTER ALL ################################
+################################################################################
+  def reregister_all(self):
+    self.manifest = { "FILES": [ ] };
+    self.register_directory();
 
 ################################################################################
 #################################### QUERY #####################################
