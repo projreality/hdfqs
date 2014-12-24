@@ -54,14 +54,14 @@ class HDFQS:
     is_hdf5 = re.compile("^.*\.h5$");
     changed = False;
     for subdir in os.listdir(path):
-      if ((subdir == ".git") or (subdir == "raw")):
+      if ((subdir == ".git") or (subdir == "raw") or (subdir == "manifest.py")):
         continue;
-      for direntry in os.walk(os.path.join(path, subdir)):
-        for filename in direntry[2]:
+      subdir = os.path.join(path, subdir);
+      for filename in os.listdir(subdir):
           if (not is_hdf5.match(filename)):
             i=i+1;
             continue;
-          full_path = os.path.join(direntry[0], filename);
+          full_path = os.path.join(subdir, filename);
           if (full_path not in self.manifest["FILES"]):
             print full_path;
             self.register(full_path);
