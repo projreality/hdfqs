@@ -53,10 +53,11 @@ class HDFQS:
             continue;
           tm = [ x["time"] for x in table ];
           path = "/" + location._v_name + "/" + group._v_name + "/" + table.name;
-          if (not self.manifest.has_key(path)):
-            self.manifest[path] = [ { "filename": filename, "start": tm[0], "stop": tm[-1] } ];
-          elif (len(tm) > 0):
-            self.manifest[path].append({ "filename": filename, "start": tm[0], "stop": tm[-1] });
+          if (len(tm) > 0):
+            if (not self.manifest.has_key(path)):
+              self.manifest[path] = [ { "filename": filename, "start": tm[0], "stop": tm[-1] } ];
+            else:
+              self.manifest[path].append({ "filename": filename, "start": tm[0], "stop": tm[-1] });
     fd.close();
 
 ################################################################################
