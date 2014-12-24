@@ -23,17 +23,16 @@ class HDFQS:
 ################################################################################
 ################################# CONSTRUCTOR ##################################
 ################################################################################
-  def __init__(self, path=None):
+  def __init__(self, path):
     self.path = path;
-    if (self.path is not None):
-      self.manifest_path = os.path.join(self.path, "manifest.py");
-      if (os.path.exists(self.manifest_path)):
-        temp = { };
-        execfile(self.manifest_path, temp);
-        self.manifest = temp["manifest"];
-      else:
-        self.manifest = { "FILES": { } };
-      self.register_directory();
+    self.manifest_path = os.path.join(self.path, "manifest.py");
+    if (os.path.exists(self.manifest_path)):
+      temp = { };
+      execfile(self.manifest_path, temp);
+      self.manifest = temp["manifest"];
+    else:
+      self.manifest = { "FILES": { } };
+    self.register_directory();
 
 ################################################################################
 ################################### REGISTER ###################################
