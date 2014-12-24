@@ -38,6 +38,7 @@ class HDFQS:
 ################################### REGISTER ###################################
 ################################################################################
   def register(self, filename):
+    filename = os.path.join(self.path, filename); # If an absolute path is given, it does not get appended to the HDFQS path
     try:
       fd = openFile(filename, mode="r");
     except IOError:
