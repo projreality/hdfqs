@@ -213,8 +213,6 @@ class HDFQS:
 ############################### CLEAN DIRECTORY ################################
 ################################################################################
   def clean_directory(self, path, no_links=False, min_time=31536000000000000L, index=True):
-    if (path[0] == os.path.sep):
-      path = path[1:];
     path = os.path.join(self.path, path);
     if (not os.path.exists(path)):
       print("Invalid path - \"%s\"" % ( path ));
