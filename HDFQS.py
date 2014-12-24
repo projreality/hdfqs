@@ -57,7 +57,8 @@ class HDFQS:
       if ((subdir == ".git") or (subdir == "raw") or (subdir == "manifest.py")):
         continue;
       subdir = os.path.join(path, subdir);
-      for filename in os.listdir(subdir):
+      if (os.path.isdir(subdir)): # Is a subdirectory
+        for filename in os.listdir(subdir):
           if (not is_hdf5.match(filename)):
             i=i+1;
             continue;
@@ -66,6 +67,11 @@ class HDFQS:
             print full_path;
             self.register(full_path);
             changed = True;
+      elif (is_hdf5.match(subdir)): # Is an HDF5 file in the root
+        if (subdir not in self.manifest["FILES"]):
+          print subdir;
+          self.register(subdir);
+          changed = True;
 
     if (changed):
       fd = open(self.manifest_path, "w");
