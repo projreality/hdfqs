@@ -17,7 +17,7 @@ class HDFQS:
         execfile(self.manifest_path, temp);
         self.manifest = temp["manifest"];
       else:
-        self.manifest = { "FILES": [ ] };
+        self.manifest = { "FILES": { } };
       self.register_directory();
 
 ################################################################################
@@ -29,7 +29,7 @@ class HDFQS:
     except IOError:
       print "Error opening file %s" % ( filename );
       return;
-    self.manifest["FILES"].append(filename);
+    self.manifest["FILES"][filename] = True;
     for location in fd.root:
       for group in location:
         for table in group:
@@ -54,18 +54,24 @@ class HDFQS:
     is_hdf5 = re.compile("^.*\.h5$");
     changed = False;
     for subdir in os.listdir(path):
-      if ((subdir == ".git") or (subdir == "raw")):
+      if ((subdir == ".git") or (subdir == "raw") or (subdir == "manifest.py")):
         continue;
-      for direntry in os.walk(os.path.join(path, subdir)):
-        for filename in direntry[2]:
+      subdir = os.path.join(path, subdir);
+      if (os.path.isdir(subdir)): # Is a subdirectory
+        for filename in os.listdir(subdir):
           if (not is_hdf5.match(filename)):
             i=i+1;
             continue;
-          full_path = os.path.join(direntry[0], filename);
+          full_path = os.path.join(subdir, filename);
           if (full_path not in self.manifest["FILES"]):
             print full_path;
             self.register(full_path);
             changed = True;
+      elif (is_hdf5.match(subdir)): # Is an HDF5 file in the root
+        if (subdir not in self.manifest["FILES"]):
+          print subdir;
+          self.register(subdir);
+          changed = True;
 
     if (changed):
       fd = open(self.manifest_path, "w");
@@ -76,7 +82,7 @@ class HDFQS:
 ############################### RE-REGISTER ALL ################################
 ################################################################################
   def reregister_all(self):
-    self.manifest = { "FILES": [ ] };
+    self.manifest = { "FILES": { } };
     self.register_directory();
 
 ################################################################################
