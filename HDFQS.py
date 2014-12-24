@@ -164,7 +164,7 @@ class HDFQS:
 ################################################################################
 #################################### CLEAN #####################################
 ################################################################################
-  def clean(self, filename, min_time=31536000000000000L, index=True):
+  def sanitize(self, filename, min_time=31536000000000000L, index=True):
     filename = os.path.join(self.path, filename);
     fd = openFile(filename, mode="a");
     print filename;
@@ -212,7 +212,7 @@ class HDFQS:
 ################################################################################
 ############################### CLEAN DIRECTORY ################################
 ################################################################################
-  def clean_directory(self, path, no_links=False, min_time=31536000000000000L, index=True):
+  def sanitize_directory(self, path, no_links=False, min_time=31536000000000000L, index=True):
     path = os.path.join(self.path, path);
     if (not os.path.exists(path)):
       print("Invalid path - \"%s\"" % ( path ));
@@ -223,9 +223,9 @@ class HDFQS:
 
       full_path = os.path.join(path, filename);
       if (os.path.isdir(full_path)):
-        self.clean_directory(full_path, min_time=min_time, index=index);
+        self.sanitize_directory(full_path, min_time=min_time, index=index);
       elif (no_links and os.path.islink(full_path)):
         continue;
       elif (filename[-3:] == ".h5"):
-        self.clean(full_path, min_time=min_time, index=index);
+        self.sanitize(full_path, min_time=min_time, index=index);
 
