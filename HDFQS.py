@@ -17,7 +17,7 @@ class HDFQS:
         execfile(self.manifest_path, temp);
         self.manifest = temp["manifest"];
       else:
-        self.manifest = { "FILES": [ ] };
+        self.manifest = { "FILES": { } };
       self.register_directory();
 
 ################################################################################
@@ -29,7 +29,7 @@ class HDFQS:
     except IOError:
       print "Error opening file %s" % ( filename );
       return;
-    self.manifest["FILES"].append(filename);
+    self.manifest["FILES"][filename] = True;
     for location in fd.root:
       for group in location:
         for table in group:
@@ -82,7 +82,7 @@ class HDFQS:
 ############################### RE-REGISTER ALL ################################
 ################################################################################
   def reregister_all(self):
-    self.manifest = { "FILES": [ ] };
+    self.manifest = { "FILES": { } };
     self.register_directory();
 
 ################################################################################
