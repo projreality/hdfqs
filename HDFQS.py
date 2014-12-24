@@ -165,6 +165,7 @@ class HDFQS:
 #################################### CLEAN #####################################
 ################################################################################
   def clean(self, filename, min_time=31536000000000000L, index=True):
+    filename = os.path.join(self.path, filename);
     fd = openFile(filename, mode="a");
     print filename;
 
