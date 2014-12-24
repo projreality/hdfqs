@@ -1,3 +1,9 @@
+"""
+HDFQS Python Library
+
+This library handles reading data from an HDFQS data store.
+"""
+
 from HDFQS import HDFQS;
 
 __author__ = "Samuel Li";

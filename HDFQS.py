@@ -13,17 +13,43 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+"""
+HDFQS Python Library
+
+This module contains the class and all functions required for handling HDFQS data stores.
+"""
+
 import numpy;
 import os;
 import re;
 from tables import *
 
 class HDFQS:
+  """
+  This class wraps all functionality to read data from an HDFQS data store.
+
+  Functions:
+    __init__
+    sanitize
+    sanitize_directory
+    get_fields
+    load
+    register
+    register_directory
+    reregister_all
+  """
 
 ################################################################################
 ################################# CONSTRUCTOR ##################################
 ################################################################################
   def __init__(self, path):
+    """
+    Create HDFQS object given path to HDFQS data store.
+
+    Args:
+      path (str): Path of root of HDFQS data store.
+    """
+
     self.path = path;
     self.manifest_path = os.path.join(self.path, "manifest.py");
     if (os.path.exists(self.manifest_path)):
@@ -39,6 +65,15 @@ class HDFQS:
 ################################################################################
   def register(self, filename):
     filename = os.path.join(self.path, filename); # If an absolute path is given, it does not get appended to the HDFQS path
+    """
+    Register file in HDFQS manifest.
+
+    All HDF5 files within the HDFQS data store are registered in the manifest for the data store. The manifest associates all data tables with the HDF5 files that contain part of the table, along with the time range contained in each file.
+
+    Args:
+      filename (str): Path to file to register. Can be relative to HDFQS root.
+    """
+
     try:
       fd = openFile(filename, mode="r");
     except IOError:
@@ -65,6 +100,13 @@ class HDFQS:
 ############################## REGISTER DIRECTORY ##############################
 ################################################################################
   def register_directory(self, path=""):
+    """
+    Register all HDF5 files in the specified directory.
+
+    Args:
+      path(str): Path of directory to register (default is HDFQS root).
+    """
+
     path = os.path.join(self.path, path);
     i = 0;
     is_hdf5 = re.compile("^.*\.h5$");
@@ -98,6 +140,10 @@ class HDFQS:
 ############################### RE-REGISTER ALL ################################
 ################################################################################
   def reregister_all(self):
+    """
+    Clear the manifest and reregister all HDF5 files in HDFQS data store.
+    """
+
     self.manifest = { "FILES": { } };
     self.register_directory();
 
@@ -105,6 +151,15 @@ class HDFQS:
 #################################### QUERY #####################################
 ################################################################################
   def query(self, path, start, stop):
+    """
+    Return list of files containing data from the specified table and time range.
+
+    Args:
+      path(str): HDF5 path to data table.
+      start(int64): Start of time range, in ns since the epoch.
+      stop(int64): End of time range, in ns since the epoch.
+    """
+
     files = [ ];
     for entry in self.manifest[path]:
       if ((entry["start"] <= stop) and (entry["stop"] >= start)):
@@ -116,6 +171,20 @@ class HDFQS:
 ##################################### LOAD #####################################
 ################################################################################
   def load(self, path, start, stop, numpts=0, time_field="time", value_field="value"):
+    """
+    Return data from the specified table and time range.
+
+    This function loads data in the HDFQS data store from the specified data table within the specified time range. For tables with multiple value fields (e.g. x, y, z), only a single value field may be loaded. An optional parameter can specify the number of datapoints to return, in which case the specified number of datapoints, as evenly spaced as possible within the time range, will be returned.
+
+    Args:
+      path(str): HDF5 path to the data table.
+      start(int64): Start of time range, in ns since the epoch.
+      stop(int64): End of time range, in ns since the epoch.
+      numpts(int): Number of points to return. Default is 0 (return all points).
+      time_field(str): Name of time field in the table (default is "time").
+      value_field(str): Name of value field to load (default is "value").
+    """
+
     files = self.query(path, start, stop);
     data = None;
     for f in files:
@@ -150,6 +219,13 @@ class HDFQS:
 ################################## GET FIELDS ##################################
 ################################################################################
   def get_fields(self, path):
+    """
+    Return all fields in a data table.
+
+    Args:
+      path(str): HDF5 path to the data table.
+    """
+
     files = self.query(path, 0, numpy.Inf);
     if (len(files) == 0):
       raise Exception("Nonexistant path: \"%s\"" % path);
@@ -165,6 +241,17 @@ class HDFQS:
 #################################### CLEAN #####################################
 ################################################################################
   def sanitize(self, filename, min_time=31536000000000000L, index=True):
+    """
+    Sanitize all table in specified file.
+
+    For each table in the file, this function removes all data entries with invalid time (any time before the specified minimum time), and optionally adds a completed-sorted index on the time column (to speed up loading data).
+
+    Args:
+      filename(str): Name of HDF5 file (absolute or relative to HDFQS root).
+      min_time(int64): Earliest valid time (ns since the epoch). Default is 1/1/1971.
+      index(bool): Whether or not to create a CS index on the time column (Default is False).
+    """
+
     filename = os.path.join(self.path, filename);
     fd = openFile(filename, mode="a");
     print filename;
@@ -213,6 +300,18 @@ class HDFQS:
 ############################### CLEAN DIRECTORY ################################
 ################################################################################
   def sanitize_directory(self, path, no_links=False, min_time=31536000000000000L, index=True):
+    """
+    Sanitize all files in the specified directory.
+    
+    Run the sanitize function on all HDF5 files in the specified directory, recursing through all subdirectories. Links may be optionally ignored, for use with git annex. In this case, all files added into git annex are assumed to be sanitized, while files not yet added (or which have been unlocked) will be sanitized.
+
+    Args:
+      path(str): Path of directory to sanitize.
+      no_links(bool): Whether or not to ignore links (default is False).
+      min_time(int64): Earliest valid time (ns since the epoch). Default is 1/1/1971.
+      index(bool): Whether or not to create a CS index on the time column (Default is False).
+    """
+
     path = os.path.join(self.path, path);
     if (not os.path.exists(path)):
       print("Invalid path - \"%s\"" % ( path ));
