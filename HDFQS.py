@@ -231,7 +231,7 @@ class HDFQS:
       fd.close();
 
     if (data is None):
-      return np.transpose(np.array([ [ ], [ ] ]));
+      return np.transpose(np.ma.array([ [ ], [ ] ]));
     else:
       return data;
 
