@@ -69,6 +69,9 @@ class HDFQS:
 
     filename = os.path.join(self.path, filename); # If an absolute path is given, it does not get appended to the HDFQS path
 
+    if (filename in self.manifest["FILES"]):
+      return;
+
     try:
       fd = openFile(filename, mode="r");
     except IOError:
