@@ -16,7 +16,7 @@
 """
 HDFQS Python Library
 
-This module contains the class and all functions required for handling HDFQS data stores.
+This module contains the class and all functions required for reading data from HDFQS data stores.
 """
 
 import numpy;
@@ -27,16 +27,6 @@ from tables import *
 class HDFQS:
   """
   This class wraps all functionality to read data from an HDFQS data store.
-
-  Functions:
-    __init__
-    sanitize
-    sanitize_directory
-    get_fields
-    load
-    register
-    register_directory
-    reregister_all
   """
 
 ################################################################################
@@ -44,10 +34,12 @@ class HDFQS:
 ################################################################################
   def __init__(self, path):
     """
-    Create HDFQS object given path to HDFQS data store.
+    Create an HDFQS object given the path to the HDFQS data store.
 
-    Args:
-      path (str): Path of root of HDFQS data store.
+    Parameters
+    ----------
+    path : str
+      Path of root of HDFQS data store.
     """
 
     self.path = path;
@@ -64,15 +56,18 @@ class HDFQS:
 ################################### REGISTER ###################################
 ################################################################################
   def register(self, filename):
+    """
+    Register a file in the HDFQS manifest.
+
+    All HDF5 files within the HDFQS data store need to be registered in the manifest in order to be queried by HDFQS. The manifest associates all data tables with the HDF5 files that contain part of the table, along with the time range contained in each file.
+
+    Parameters
+    ----------
+    filename : str
+      Path of file to register. Can be relative to HDFQS root.
+    """
+
     filename = os.path.join(self.path, filename); # If an absolute path is given, it does not get appended to the HDFQS path
-    """
-    Register file in HDFQS manifest.
-
-    All HDF5 files within the HDFQS data store are registered in the manifest for the data store. The manifest associates all data tables with the HDF5 files that contain part of the table, along with the time range contained in each file.
-
-    Args:
-      filename (str): Path to file to register. Can be relative to HDFQS root.
-    """
 
     try:
       fd = openFile(filename, mode="r");
@@ -103,8 +98,10 @@ class HDFQS:
     """
     Register all HDF5 files in the specified directory.
 
-    Args:
-      path(str): Path of directory to register (default is HDFQS root).
+    Parameters
+    ----------
+    path : str
+      Path of directory to register (default is the HDFQS root). Path can be relative to HDFQS root.
     """
 
     path = os.path.join(self.path, path);
@@ -142,6 +139,8 @@ class HDFQS:
   def reregister_all(self):
     """
     Clear the manifest and reregister all HDF5 files in HDFQS data store.
+
+    Use of this function is generally not necessary, unless damage to the manifest file is suspected.
     """
 
     self.manifest = { "FILES": { } };
@@ -152,12 +151,21 @@ class HDFQS:
 ################################################################################
   def query(self, path, start, stop):
     """
-    Return list of files containing data from the specified table and time range.
+    Return filenames containing data from the specified table and time range.
 
-    Args:
-      path(str): HDF5 path to data table.
-      start(int64): Start of time range, in ns since the epoch.
-      stop(int64): End of time range, in ns since the epoch.
+    Parameters
+    ----------
+    path : str
+      HDF5 path to data table.
+    start : int64
+      Start of time range, in ns since the epoch.
+    stop : int64
+      End of time range, in ns since the epoch.
+
+    Returns
+    -------
+    files : list
+      List of filenames which contain the specified data in the specified time range.
     """
 
     files = [ ];
@@ -176,13 +184,25 @@ class HDFQS:
 
     This function loads data in the HDFQS data store from the specified data table within the specified time range. For tables with multiple value fields (e.g. x, y, z), only a single value field may be loaded. An optional parameter can specify the number of datapoints to return, in which case the specified number of datapoints, as evenly spaced as possible within the time range, will be returned.
 
-    Args:
-      path(str): HDF5 path to the data table.
-      start(int64): Start of time range, in ns since the epoch.
-      stop(int64): End of time range, in ns since the epoch.
-      numpts(int): Number of points to return. Default is 0 (return all points).
-      time_field(str): Name of time field in the table (default is "time").
-      value_field(str): Name of value field to load (default is "value").
+    Parameters
+    ----------
+    path : str
+      HDF5 path to the data table.
+    start : int64
+      Start of time range, in ns since the epoch.
+    stop : int64
+      End of time range, in ns since the epoch.
+    numpts : int
+      Number of points to return. Default is 0 (return all points).
+    time_field : str
+      Name of the time field in the table (default is "time").
+    value_field : str
+      Name of the value field to load (default is "value").
+
+    Returns
+    -------
+    data : numpy.ma.array
+      Array containing the requested data.
     """
 
     files = self.query(path, start, stop);
@@ -222,8 +242,15 @@ class HDFQS:
     """
     Return all fields in a data table.
 
-    Args:
-      path(str): HDF5 path to the data table.
+    Parameters
+    ----------
+    path : str
+      HDF5 path to the data table.
+
+    Returns
+    -------
+    fields : list
+      List containing the fields of the data table.
     """
 
     files = self.query(path, 0, numpy.Inf);
@@ -242,14 +269,18 @@ class HDFQS:
 ################################################################################
   def sanitize(self, filename, min_time=31536000000000000L, index=True):
     """
-    Sanitize all table in specified file.
+    Sanitize all tables in specified file.
 
-    For each table in the file, this function removes all data entries with invalid time (any time before the specified minimum time), and optionally adds a completed-sorted index on the time column (to speed up loading data).
+    For each table in the file, this function removes all data entries with an invalid time (any time before the specified minimum time), and optionally adds a completely-sorted index on the time column (to speed up loading data).
 
-    Args:
-      filename(str): Name of HDF5 file (absolute or relative to HDFQS root).
-      min_time(int64): Earliest valid time (ns since the epoch). Default is 1/1/1971.
-      index(bool): Whether or not to create a CS index on the time column (Default is False).
+    Parameters
+    ----------
+    filename : str
+      Name of HDF5 file (absolute or relative to HDFQS root).
+    min_time : int64
+      Earliest valid time, in ns since the epoch (default is 1/1/1971 00:00:00 UTC).
+    index : bool
+      Whether or not to create a completely-sorted index on the time column (default is True).
     """
 
     filename = os.path.join(self.path, filename);
@@ -303,13 +334,18 @@ class HDFQS:
     """
     Sanitize all files in the specified directory.
     
-    Run the sanitize function on all HDF5 files in the specified directory, recursing through all subdirectories. Links may be optionally ignored, for use with git annex. In this case, all files added into git annex are assumed to be sanitized, while files not yet added (or which have been unlocked) will be sanitized.
+    Run the sanitize function on all HDF5 files in the specified directory, recursing through all subdirectories. Links may be optionally ignored, for use with git annex. In this case, all files added into git annex can be assumed to be sanitized, while files not yet added (or which have been unlocked) will be sanitized.
 
-    Args:
-      path(str): Path of directory to sanitize.
-      no_links(bool): Whether or not to ignore links (default is False).
-      min_time(int64): Earliest valid time (ns since the epoch). Default is 1/1/1971.
-      index(bool): Whether or not to create a CS index on the time column (Default is False).
+    Parameters
+    ----------
+    path : str
+      Path of directory to sanitize.
+    no_links : bool
+      Whether or not to ignore symlinks (default is False).
+    min_time : int64
+      Earliest valid time, in ns since the epoch (default is 1/1/1971 00:00:00 UTC).
+    index : bool
+      Whether or not to create a completed-sorted index on the time column (Default is False).
     """
 
     path = os.path.join(self.path, path);
