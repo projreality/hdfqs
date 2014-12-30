@@ -19,7 +19,7 @@ HDFQS Python Library
 This module contains the class and all functions required for reading data from HDFQS data stores.
 """
 
-import numpy;
+import numpy as np;
 import os;
 import re;
 from tables import *
@@ -213,25 +213,25 @@ class HDFQS:
       if (len(t) < 2):
         continue;
       if (numpts == 0): # load all points
-        data_from_file = numpy.ma.array([ [ x[time_field], x[value_field] ] for x in fd.getNode(path).where("(%s >= %d) & (%s <= %d)" % ( time_field, start, time_field, stop )) ]);
+        data_from_file = np.ma.array([ [ x[time_field], x[value_field] ] for x in fd.getNode(path).where("(%s >= %d) & (%s <= %d)" % ( time_field, start, time_field, stop )) ]);
       else:
         temp = t[0:2];
         time_res = t[1][time_field] - t[0][time_field];
-        stride_time = (stop - start) / numpy.float64(numpts);
-        stride = int(numpy.floor(stride_time / time_res));
+        stride_time = (stop - start) / np.float64(numpts);
+        stride = int(np.floor(stride_time / time_res));
         if (stride > 0):
-          data_from_file = numpy.ma.array([ [ x[time_field], x[value_field] ] for x in fd.getNode(path).where("(%s >= %d) & (%s <= %d)" % ( time_field, start, time_field, stop ), step=stride) ]);
+          data_from_file = np.ma.array([ [ x[time_field], x[value_field] ] for x in fd.getNode(path).where("(%s >= %d) & (%s <= %d)" % ( time_field, start, time_field, stop ), step=stride) ]);
         else: # more pixels than datapoints in time range
-          data_from_file = numpy.ma.array([ [ x[time_field], x[value_field] ] for x in fd.getNode(path).where("(%s >= %d) & (%s <= %d)" % ( time_field, start, time_field, stop )) ]);
+          data_from_file = np.ma.array([ [ x[time_field], x[value_field] ] for x in fd.getNode(path).where("(%s >= %d) & (%s <= %d)" % ( time_field, start, time_field, stop )) ]);
       if (len(data_from_file) > 0):
         if (data is None):
           data = data_from_file;
         else:
-          data = numpy.concatenate(( data, data_from_file ));
+          data = np.concatenate(( data, data_from_file ));
       fd.close();
 
     if (data is None):
-      return numpy.transpose(numpy.array([ [ ], [ ] ]));
+      return np.transpose(np.array([ [ ], [ ] ]));
     else:
       return data;
 
@@ -253,7 +253,7 @@ class HDFQS:
       List containing the fields of the data table.
     """
 
-    files = self.query(path, 0, numpy.Inf);
+    files = self.query(path, 0, np.Inf);
     if (len(files) == 0):
       raise Exception("Nonexistant path: \"%s\"" % path);
     else:
