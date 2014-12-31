@@ -12,5 +12,6 @@ Contents:
    :maxdepth: 2
 
    installation.rst
+   examples.rst
    hdfqs.rst
 

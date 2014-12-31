@@ -16,6 +16,8 @@ or::
 
   from hdfqs import HDFQS;
 
+.. _installation--including-directly-in-code:
+
 Including directly in code
 --------------------------
 
