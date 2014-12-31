@@ -36,6 +36,8 @@ class HDFQS:
     """
     Create an HDFQS object given the path to the HDFQS data store.
 
+    This function automatically runs :meth:`register_directory` on the HDFQS root.
+
     Parameters
     ----------
     path : str
@@ -60,6 +62,8 @@ class HDFQS:
     Register a file in the HDFQS manifest.
 
     All HDF5 files within the HDFQS data store need to be registered in the manifest in order to be queried by HDFQS. The manifest associates all data tables with the HDF5 files that contain part of the table, along with the time range contained in each file.
+
+    Note - all new files in the HDFQS data store are automatically registered when the HDFQS object is created. The use of this function is only required if new files are added into the HDFQS data store after the HDFQS object has been initialized.
 
     Parameters
     ----------
@@ -100,6 +104,8 @@ class HDFQS:
   def register_directory(self, path=""):
     """
     Register all HDF5 files in the specified directory.
+
+    See documentation for :meth:`register` regarding automatic registration during initialization.
 
     Parameters
     ----------
@@ -185,7 +191,7 @@ class HDFQS:
     """
     Return data from the specified table and time range.
 
-    This function loads data in the HDFQS data store from the specified data table within the specified time range. For tables with multiple value fields (e.g. x, y, z), only a single value field may be loaded. An optional parameter can specify the number of datapoints to return, in which case the specified number of datapoints, as evenly spaced as possible within the time range, will be returned.
+    This function loads data in the HDFQS data store from the specified data table within the specified time range. Note that the time range includes the endpoints. For tables with multiple value fields (e.g. x, y, z), only a single value field may be loaded. An optional parameter can specify the number of datapoints to return, in which case the specified number of datapoints, as evenly spaced as possible within the time range, will be returned.
 
     Parameters
     ----------
@@ -196,7 +202,7 @@ class HDFQS:
     stop : int64
       End of time range, in ns since the epoch.
     numpts : int
-      Number of points to return. Default is 0 (return all points).
+      Number of points to return. Default is 0 (return all points within the time range).
     time_field : str
       Name of the time field in the table (default is "time").
     value_field : str
@@ -205,7 +211,7 @@ class HDFQS:
     Returns
     -------
     data : numpy.ma.array
-      Array containing the requested data.
+      An Nx2 array containing the requested data. The first column is the time, the second column is the value.
     """
 
     files = self.query(path, start, stop);
@@ -337,7 +343,7 @@ class HDFQS:
     """
     Sanitize all files in the specified directory.
     
-    Run the sanitize function on all HDF5 files in the specified directory, recursing through all subdirectories. Links may be optionally ignored, for use with git annex. In this case, all files added into git annex can be assumed to be sanitized, while files not yet added (or which have been unlocked) will be sanitized.
+    Run :meth:`sanitize` on all HDF5 files in the specified directory, recursing through all subdirectories. Links may be optionally ignored, for use with git annex. In this case, all files added into git annex can be assumed to be sanitized, while files not yet added (or which have been unlocked) will be sanitized.
 
     Parameters
     ----------
