@@ -3,7 +3,7 @@ Example
 
 Refer to :ref:`installation` to install HDFQS.
 
-Download the `example HDFQS datastore <http://www.projreality.com/hdfqs/example.tgz>`_. Extract it into /tmp::
+Download the `example HDFQS datastore <http://www.projreality.com/hdfqs/examples/example.tgz>`_. Extract it into /tmp::
 
   cd /tmp
   tar -xvf [YOUR DOWNLOADED LOCATION]/example.tgz
