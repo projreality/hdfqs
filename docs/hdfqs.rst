@@ -1,7 +1,7 @@
 HDFQS Python Library API
 ========================
 
-.. automodule:: HDFQS
+.. automodule:: hdfqs
 
 .. autoclass:: HDFQS
     :special-members:

@@ -1,12 +1,35 @@
+.. _installation:
+
 Installation
 ============
 
-There are two ways of using HDFQS. One is to install it as a Python module. The other is to include it directly in your code.
+HDFQS can be installed either via :command:`pip`, cloning the git repository, or downloading the source distribution.
 
-Installing as a Python module
------------------------------
+Installing via pip
+------------------
 
-Copy (or git clone) hdfqs into the Python modules directory (for Python 2.7, this is /usr/lib/python2.7).
+Run either as root, or with :command:`sudo`::
+
+  pip install hdfqs
+
+Installing from git repository
+------------------------------
+
+Inside the git repository, run::
+
+  python setup.py install
+
+Installing from source distribution
+-----------------------------------
+
+Extract the source distribution file (replace [VERSION] with the actual version) and install::
+
+  tar -xvf hdfqs-[VERSION].tgz
+  cd hdfqs-[VERSION]
+  python setup.py install
+
+Usage
+-----
 
 In python, import the module as::
 
@@ -16,15 +39,3 @@ or::
 
   from hdfqs import HDFQS;
 
-.. _installation--including-directly-in-code:
-
-Including directly in code
---------------------------
-
-Copy HDFQS.py into your source code directory. In your code, import the module as::
-
-  import HDFQS;
-
-or::
-
-  from HDFQS import HDFQS;
