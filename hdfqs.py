@@ -22,7 +22,7 @@ This module contains the class and all functions required for reading data from 
 import numpy as np;
 import os;
 import re;
-from tables import *
+import tables;
 
 class HDFQS:
   """
@@ -77,7 +77,7 @@ class HDFQS:
       return;
 
     try:
-      fd = openFile(filename, mode="r");
+      fd = tables.openFile(filename, mode="r");
     except IOError:
       print "Error opening file %s" % ( filename );
       return;
@@ -85,7 +85,7 @@ class HDFQS:
     for location in fd.root:
       for group in location:
         for table in group:
-          if (type(table) != Table):
+          if (type(table) != tables.Table):
             continue;
           if (table.shape == ( 0, )):
             continue;
@@ -217,7 +217,7 @@ class HDFQS:
     files = self.query(path, start, stop);
     data = None;
     for f in files:
-      fd = openFile(f, mode="r");
+      fd = tables.openFile(f, mode="r");
       t = fd.getNode(path);
       if (len(t) < 2):
         continue;
@@ -267,7 +267,7 @@ class HDFQS:
       raise Exception("Nonexistant path: \"%s\"" % path);
     else:
       filename = files[0];
-      fd = openFile(filename);
+      fd = tables.openFile(filename);
       table = fd.getNode(path);
       fields = table.colnames;
       fd.close();
@@ -293,7 +293,7 @@ class HDFQS:
     """
 
     filename = os.path.join(self.path, filename);
-    fd = openFile(filename, mode="a");
+    fd = tables.openFile(filename, mode="a");
     print filename;
 
     g = fd.root;
