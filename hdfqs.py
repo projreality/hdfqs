@@ -398,16 +398,39 @@ class HDFQS:
 ################################ GET CATEGORIES ################################
 ################################################################################
   def get_categories(self, location):
-    return self.manifest["ROOT"][location].keys();
+    try:
+      if (location[0] == "/"):
+        location = location[1:];
+      return self.manifest["ROOT"][location].keys();
+    except:
+      print("Invalid location \"%s\"" % ( location ));
+      return [ ];
 
 ################################################################################
 ################################## GET TABLES ##################################
 ################################################################################
-  def get_tables(self, location, category):
-    return self.manifest["ROOT"][location][category].keys();
+  def get_tables(self, location, category=None):
+    try:
+      if (category is None):
+        x = re.match("/(.+)/(.+)", location);
+        location = x.group(1);
+        category = x.group(2);
+      return self.manifest["ROOT"][location][category].keys();
+    except:
+      print("Invalid location/category: \"%s\", \"%s\"" % ( location, category ));
+      return [ ];
 
 ################################################################################
 ################################ GET TIME RANGE ################################
 ################################################################################
-  def get_time_range(self, location, category, table):
-    return self.manifest["ROOT"][location][category][table];
+  def get_time_range(self, location, category=None, table=None):
+    try:
+      if ((category is None) and (table is None)):
+        x = re.match("/(.+)/(.+)/(.+)", location);
+        location = x.group(1);
+        category = x.group(2);
+        table = x.group(3);
+      return self.manifest["ROOT"][location][category][table];
+    except:
+      print("Invallid location/category/table: \"%s\", \"%s\", \"%s\"" % ( location, category, table ));
+
