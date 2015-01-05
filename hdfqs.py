@@ -45,6 +45,8 @@ class HDFQS:
     """
 
     self.path = path;
+    self.fd = None;
+    self.filters = tables.Filters(complevel=1, complib="zlib", shuffle=True, fletcher32=True);
     self.manifest_path = os.path.join(self.path, "manifest.py");
     if (os.path.exists(self.manifest_path)):
       temp = { };
@@ -434,3 +436,64 @@ class HDFQS:
     except:
       print("Invallid location/category/table: \"%s\", \"%s\", \"%s\"" % ( location, category, table ));
 
+################################################################################
+################################## OPEN FILE ###################################
+################################################################################
+  def open_file(self, filename):
+    filename = os.path.join(self.path, filename);
+    self.fd = tables.openFile(filename, mode="a");
+
+################################################################################
+#################################### WRITE #####################################
+################################################################################
+  def write(self, path, df, name="", filters=None, units=None):
+    if (self.fd is None):
+      raise(NoFileOpenException);
+
+    try: # Check if table exists
+      t = self.fd.getNode(path);
+    except tables.exceptions.NoSuchNodeError:
+      # Parse where and name
+      temp = path.rfind("/");
+      where = path[:temp];
+      table_name = path[temp+1:];
+      # Create description
+      descr = HDFQS.create_description(df);
+      # Create table
+      if (filters is None):
+        filters = self.filters;
+      t = self.fd.createTable(where, table_name, descr, name, filters=filters, createparents=True);
+      if (units is None):
+        units = { "time": "ns since the epoch", "tz": "15 min blocks from UTC" };
+      t.attrs["units"] = units;
+    # Add data
+    t.append(df.values.tolist());
+
+################################################################################
+################################## OPEN FILE ###################################
+################################################################################
+  def close_file(self):
+    if (self.fd is not None):
+      self.fd.close();
+      self.fd = None;
+
+################################################################################
+############################## CREATE DESCRIPTION ##############################
+################################################################################
+  @staticmethod
+  def create_description(df):
+    descr = dict();
+    cols = df.columns.tolist();
+    dtypes = df.dtypes.tolist();
+    for i in range(len(cols)):
+      col = cols[i];
+      col_dtype = dtypes[i];
+      descr[col] = tables.Col.from_dtype(col_dtype, pos=i);
+
+    return descr;
+
+################################################################################
+################################## EXCEPTIONS ##################################
+################################################################################
+class NoFileOpenException(Exception):
+  pass;
