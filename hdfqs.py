@@ -50,9 +50,9 @@ class HDFQS:
       temp = { };
       execfile(self.manifest_path, temp);
       self.manifest = temp["manifest"];
+      self.register_directory();
     else:
-      self.manifest = { "FILES": { } };
-    self.register_directory();
+      self.reregister_all();
 
 ################################################################################
 ################################### REGISTER ###################################
@@ -90,12 +90,27 @@ class HDFQS:
           if (table.shape == ( 0, )):
             continue;
           tm = [ x["time"] for x in table ];
-          path = "/" + location._v_name + "/" + group._v_name + "/" + table.name;
+          location_name = location._v_name;
+          group_name = group._v_name;
+          table_name = table.name;
+          path = "/" + location_name + "/" + group_name + "/" + table_name;
           if (len(tm) > 0):
+            start = tm[0];
+            stop = tm[-1];
             if (not self.manifest.has_key(path)):
-              self.manifest[path] = [ { "filename": filename, "start": tm[0], "stop": tm[-1] } ];
+              self.manifest[path] = [ { "filename": filename, "start": start, "stop": stop } ];
             else:
-              self.manifest[path].append({ "filename": filename, "start": tm[0], "stop": tm[-1] });
+              self.manifest[path].append({ "filename": filename, "start": start, "stop": stop });
+
+            if (location_name not in self.manifest["ROOT"]):
+              self.manifest["ROOT"][location_name] = { };
+            if (group_name not in self.manifest["ROOT"][location_name]):
+              self.manifest["ROOT"][location_name][group_name] = { };
+            if (table_name not in self.manifest["ROOT"][location_name][group_name]):
+              self.manifest["ROOT"][location_name][group_name][table_name] = [ start, stop ];
+            else:
+              ( old_start, old_stop ) = self.manifest["ROOT"][location_name][group_name][table_name];
+              self.manifest["ROOT"][location_name][group_name][table_name] = [ np.minimum(start, old_start), np.maximum(stop, old_stop) ];
     fd.close();
 
 ################################################################################
@@ -152,7 +167,7 @@ class HDFQS:
     Use of this function is generally not necessary, unless damage to the manifest file is suspected.
     """
 
-    self.manifest = { "FILES": { } };
+    self.manifest = { "FILES": { }, "ROOT": { } };
     self.register_directory();
 
 ################################################################################
@@ -372,4 +387,50 @@ class HDFQS:
         continue;
       elif (filename[-3:] == ".h5"):
         self.sanitize(full_path, min_time=min_time, index=index);
+
+################################################################################
+################################ GET LOCATIONS #################################
+################################################################################
+  def get_locations(self):
+    return self.manifest["ROOT"].keys();
+
+################################################################################
+################################ GET CATEGORIES ################################
+################################################################################
+  def get_categories(self, location):
+    try:
+      if (location[0] == "/"):
+        location = location[1:];
+      return self.manifest["ROOT"][location].keys();
+    except:
+      print("Invalid location \"%s\"" % ( location ));
+      return [ ];
+
+################################################################################
+################################## GET TABLES ##################################
+################################################################################
+  def get_tables(self, location, category=None):
+    try:
+      if (category is None):
+        x = re.match("/(.+)/(.+)", location);
+        location = x.group(1);
+        category = x.group(2);
+      return self.manifest["ROOT"][location][category].keys();
+    except:
+      print("Invalid location/category: \"%s\", \"%s\"" % ( location, category ));
+      return [ ];
+
+################################################################################
+################################ GET TIME RANGE ################################
+################################################################################
+  def get_time_range(self, location, category=None, table=None):
+    try:
+      if ((category is None) and (table is None)):
+        x = re.match("/(.+)/(.+)/(.+)", location);
+        location = x.group(1);
+        category = x.group(2);
+        table = x.group(3);
+      return self.manifest["ROOT"][location][category][table];
+    except:
+      print("Invallid location/category/table: \"%s\", \"%s\", \"%s\"" % ( location, category, table ));
 
