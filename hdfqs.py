@@ -33,7 +33,7 @@ class HDFQS:
 ################################################################################
 ################################# CONSTRUCTOR ##################################
 ################################################################################
-  def __init__(self, path):
+  def __init__(self, path, register=True):
     """
     Create an HDFQS object given the path to the HDFQS data store.
 
@@ -49,13 +49,14 @@ class HDFQS:
     self.fd = None;
     self.filters = tables.Filters(complevel=1, complib="zlib", shuffle=True, fletcher32=True);
     self.manifest_path = os.path.join(self.path, "manifest.py");
-    if (os.path.exists(self.manifest_path)):
-      temp = { };
-      execfile(self.manifest_path, temp);
-      self.manifest = temp["manifest"];
-      self.register_directory();
-    else:
-      self.reregister_all();
+    if (register):
+      if (os.path.exists(self.manifest_path)):
+        temp = { };
+        execfile(self.manifest_path, temp);
+        self.manifest = temp["manifest"];
+        self.register_directory();
+      else:
+        self.reregister_all();
 
 ################################################################################
 ################################### REGISTER ###################################
