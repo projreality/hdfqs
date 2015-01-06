@@ -179,44 +179,6 @@ class HDFQS:
     self.register_directory();
 
 ################################################################################
-################################# GET RELPATH ##################################
-################################################################################
-  def get_relpath(self, path):
-    if (path.startswith(self.path)):
-      return os.path.relpath(path, self.path);
-    else:
-      return path;
-
-################################################################################
-#################################### QUERY #####################################
-################################################################################
-  def query(self, path, start, stop):
-    """
-    Return filenames containing data from the specified table and time range.
-
-    Parameters
-    ----------
-    path : str
-      HDF5 path to data table.
-    start : int64
-      Start of time range, in ns since the epoch.
-    stop : int64
-      End of time range, in ns since the epoch.
-
-    Returns
-    -------
-    files : list
-      List of filenames which contain the specified data in the specified time range.
-    """
-
-    files = [ ];
-    for entry in self.manifest[path]:
-      if ((entry["start"] <= stop) and (entry["stop"] >= start)):
-        files.append(entry["filename"]);
-
-    return files;
-
-################################################################################
 ##################################### LOAD #####################################
 ################################################################################
   def load(self, path, start, stop, numpts=0, time_field="time", value_field="value"):
@@ -306,7 +268,7 @@ class HDFQS:
       return fields;
 
 ################################################################################
-#################################### CLEAN #####################################
+################################### SANITIZE ###################################
 ################################################################################
   def sanitize(self, filename, min_time=31536000000000000L, index=True):
     """
@@ -369,7 +331,7 @@ class HDFQS:
     fd.close();
 
 ################################################################################
-############################### CLEAN DIRECTORY ################################
+############################## SANITIZE DIRECTORY ##############################
 ################################################################################
   def sanitize_directory(self, path, no_links=False, min_time=31536000000000000L, index=True):
     """
@@ -409,12 +371,43 @@ class HDFQS:
 ################################ GET LOCATIONS #################################
 ################################################################################
   def get_locations(self):
+    """
+    Return all locations within HDFQS data store.
+  
+    Returns
+    -------
+    locations : list
+      List containing all locations within HDFQS data store.
+    """
+
     return self.manifest["ROOT"].keys();
 
 ################################################################################
 ################################ GET CATEGORIES ################################
 ################################################################################
   def get_categories(self, location):
+    """
+    Return all categories within specified location
+
+    There are two ways to call this function. Either specify the location::
+
+      get_categories({location});
+
+    or specify the HDF5 path to the location::
+
+      get_categories({path_in_hdf5});
+
+    Parameters
+    ----------
+    location : str
+      Location under which to search for categories. This may instead be a string containing the path in HDF5 to the location (must start with a "/").
+
+    Returns
+    -------
+    categories : str
+      List containing all categories within the specified location.
+    """
+
     try:
       if (location[0] == "/"):
         location = location[1:];
@@ -427,6 +420,30 @@ class HDFQS:
 ################################## GET TABLES ##################################
 ################################################################################
   def get_tables(self, location, category=None):
+    """
+    Return all tables within specified category
+
+    There are two ways to call this function. Either specify the location and category separately::
+
+      get_tables({location}, {category});
+
+    or specify the HDF5 path to the category::
+
+      get_tables({path_in_hdf5});
+
+    Parameters
+    ----------
+    location : str
+      Location containing the specified category. This may instead be a string containing the path in HDF5 to the category (must start with a "/").
+    category : str
+      Category under which to search for tables. Omit this parameter if specifying the category as a path in HDF5 (see :literal:`location` above).
+
+    Returns
+    -------
+    tables : str
+      List containing all tables within the specified location.
+    """
+
     try:
       if (category is None):
         x = re.match("/(.+)/(.+)", location);
@@ -441,6 +458,32 @@ class HDFQS:
 ################################ GET TIME RANGE ################################
 ################################################################################
   def get_time_range(self, location, category=None, table=None):
+    """
+    Return the minimum and maximum time of data in the specified table.
+
+    There are two ways to call this function. Either specify the location, category, and table separately::
+
+      get_time_range({location}, {category}, {table});
+
+    or specify the HDF5 path to the table::
+
+      get_time_range({path_in_hdf5});
+
+    Parameters
+    ----------
+    location : str
+      Location containing the specified category. This may instead be a string containing the path in HDF5 to the table (must start with a "/").
+    category : str
+      Category containing the specified table. Omit this parameter if specifying the table as a path in HDF5 (see :literal:`location` above).
+    table : str
+      Table to query for minimum and maximum time of data. Omit this parameter if specifying the table as a path in HDF5 (see :literal:`location` above).
+
+    Returns
+    -------
+    time_range : list
+      List containing minuimum time as element 0, maximum time as element 1.
+    """
+
     try:
       if ((category is None) and (table is None)):
         x = re.match("/(.+)/(.+)/(.+)", location);
@@ -456,6 +499,34 @@ class HDFQS:
 #################################### EXISTS ####################################
 ################################################################################
   def exists(self, location, category=None, table=None):
+    """
+    Check if a specified location/category/table exists.
+
+    There are two ways to call this function. Either specify the location, category, and table separately::
+
+      exists({location}); # check existance of location
+      exists({location}, {category}); # check existance of category
+      exists({location}, {category}, {table}); # check existance of table
+
+    or specify the HDF5 path to the table::
+
+      exists({path_in_hdf5});
+
+    Parameters
+    ----------
+    location : str
+      If :literal:`category` and :literal:`table` are omitted, this location is checked for existance. Alternately, this may instead be a string containing the path in HDF5 to the table (must start with a "/").
+    category : str
+      If :literal:`table` is omitted, this category under the specified location is checked for existance. Omit this parameter if specifying as a path in HDF5 (see :literal:`location` above).
+    table : str
+      Table to check for existance. Omit this parameter if specifying as a path in HDF5 (see :literal:`location` above).
+
+    Returns
+    -------
+    existance : bool
+      True if specified location/category/table exists, False otherwise.
+    """
+
     try:
       if ((category is None) and (table is None) and (location[0] == "/")):
         tokens = location.split("/");
@@ -486,6 +557,15 @@ class HDFQS:
 ################################## OPEN FILE ###################################
 ################################################################################
   def open_file(self, filename):
+    """
+    Open HDF5 file to perform write operations to.
+
+    Parameters
+    ----------
+    filename : str
+      Name of file. May be relative to HDFQS root.
+    """
+
     filename = os.path.join(self.path, filename);
     self.fd = tables.openFile(filename, mode="a");
 
@@ -493,6 +573,57 @@ class HDFQS:
 #################################### WRITE #####################################
 ################################################################################
   def write(self, path, df, tz=None, data=None, cols=None, name="", filters=None, units=None):
+    """
+    Write data into HDFQS data store.
+
+    There are two ways of calling this function, depending on the format of the data to write. To write a Pandas dataframe::
+
+      write({path}, {dataframe});
+
+    Note that the dataframe must have a column named "time" (dtype np.int64) and a column named "tz" (dtype np.int8).
+
+    To write a numpy array::
+
+      write({path}, {time array}, {timezone array}, {data array}, {columns list});
+
+    The dimensions of the array must be:
+
+    +------+------------------+
+    | Name |Dimension         |
+    +======+==================+
+    | time | ( N, )           |
+    +------+------------------+
+    | tz   | ( N, )           |
+    +------+------------------+
+    | data | ( N, P )         |
+    +------+------------------+
+    | cols | list of length P |
+    +------+------------------+
+
+    where N is the number of datapoints, P is the number of data columns (excluding time and tz).
+
+    Note that :literal:`open_file` must have been called previously to specify a file to write to.
+
+    Parameters
+    ----------
+    path : str
+      HDF5 path to data table.
+    df : pd.DataFrame
+      Data to write, including the :literal:`time` and :literal:`tz` columns. Alternately, this can be a :literal:`np.ndarray(dtype=np.int64)` containing the time data.
+    tz : np.ndarray(dtype=np.int8)
+      Timezone values. Omit this parameter if writing a Pandas DataFrame (see :literal:`df` above).
+    data : np.ndarray
+      Data to write. Omit this parameter if writing a Pandas DataFrame (see :literal:`df` above).
+    cols : list
+      Names of the columns in :literal:`data`. Omit this parameter if writing a Pandas DataFrame (see :literal:`df` above).
+    name : str
+      Descriptive name of table (passed to :literal:`tables.createTable`).
+    filters : tables.Filters
+      PyTables filter for the table (passed to :literal:`tables.createTable`).
+    units : dict
+      Units for each of the columns, including :literal:`time` and :literal:`tz`. The keys are the column names, the values are strings containing the units. This will be written to the table's :literal:`units` attribute. If not specified, a dict will be create with units specified for :literal:`time` and :literal:`tz` only.
+    """
+
     if (self.fd is None):
       raise(NoFileOpenException);
 
@@ -525,7 +656,99 @@ class HDFQS:
       t.cols.time.create_csindex();
     t.flush();
 
+################################################################################
+################################## CLOSE FILE ##################################
+################################################################################
+  def close_file(self):
+    """
+    Close HDF5 file being used for write operations.
+    """
+
+    if (self.fd is not None):
+      self.fd.close();
+      self.fd = None;
+
+################################################################################
+########################## INTERNAL UTILITY FUNCTIONS ##########################
+################################################################################
+
+################################################################################
+################################# GET RELPATH ##################################
+  def get_relpath(self, path):
+    """
+    Return path relative to HDFQS root.
+
+    If the path is not within the HDFQS root, then return the path as is.
+
+    Parameters
+    ----------
+    path : str
+      Path of an HDF5 file.
+
+    Returns
+    -------
+    relpath : str
+      Path of specified file relative to HDFQS root, or absolute path if not within HDFQS root.
+    """
+
+    if (path.startswith(self.path)):
+      return os.path.relpath(path, self.path);
+    else:
+      return path;
+
+################################################################################
+#################################### QUERY #####################################
+  def query(self, path, start, stop):
+    """
+    Return filenames containing data from the specified table and time range.
+
+    Parameters
+    ----------
+    path : str
+      HDF5 path to data table.
+    start : int64
+      Start of time range, in ns since the epoch.
+    stop : int64
+      End of time range, in ns since the epoch.
+
+    Returns
+    -------
+    files : list
+      List of filenames which contain the specified data in the specified time range.
+    """
+
+    files = [ ];
+    for entry in self.manifest[path]:
+      if ((entry["start"] <= stop) and (entry["stop"] >= start)):
+        files.append(entry["filename"]);
+
+    return files;
+
+################################################################################
+################################# GENERATE DF ##################################
   def generate_df(self, tm, tz, data, cols):
+    """
+    Generate a Pandas DataFrame from numpy arrays.
+
+    See table under :meth:`write` for a summary of the required shape of the various numpy arrays.
+
+    Parameters
+    ----------
+    tm : np.ndarray(dtype=np.int64)
+      Time data. Shape must be ( N, ), where N is the number of data points.
+    tz : np.ndarray(dtype=np.int8)
+      Timezone values. Shape must be ( N, ), where N is the number of data points.
+    data : np.ndarray
+      Data to write. Shape must be ( N, P ), where N is the number of data points, P is the number of data columns.
+    cols : list
+      Names of the columns in :literal:`data`. Must have length P, where P is the number of data columns (excluding time and timezone).
+
+    Returns
+    -------
+    df : pd.DataFrame
+      Pandas DataFrame containing the data.
+    """
+
     # Check consistency of dimensions
     if ((tm.shape[0] != tz.shape[0]) or (tm.shape[0] != data.shape[0]) or (data.shape[1] != len(cols))):
       raise InconsistentDimensionsException("Dimensions of tm %s, tz %s, data %s, cols (%d) not consistent" % ( str(tm.shape), str(tz.shape), str(data.shape), len(cols) ));
@@ -539,18 +762,23 @@ class HDFQS:
     return df;
 
 ################################################################################
-################################## OPEN FILE ###################################
-################################################################################
-  def close_file(self):
-    if (self.fd is not None):
-      self.fd.close();
-      self.fd = None;
-
-################################################################################
 ############################## CREATE DESCRIPTION ##############################
-################################################################################
   @staticmethod
   def create_description(df):
+    """
+    Create a PyTables description dict from a Pandas DataFrame.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+      Dataframe to base description on (dtypes are automatically converted to PyTables column types).
+
+    Returns
+    -------
+    descr : dict
+      PyTables description generated from the column dtypes of the dataframe.
+    """
+
     descr = dict();
     cols = df.columns.tolist();
     dtypes = df.dtypes.tolist();
