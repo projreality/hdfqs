@@ -92,28 +92,30 @@ class HDFQS:
             continue;
           if (table.shape == ( 0, )):
             continue;
-          tm = [ x["time"] for x in table ];
           location_name = location._v_name;
           group_name = group._v_name;
           table_name = table.name;
           path = "/" + location_name + "/" + group_name + "/" + table_name;
-          if (len(tm) > 0):
-            start = tm[0];
-            stop = tm[-1];
-            if (not self.manifest.has_key(path)):
-              self.manifest[path] = [ { "filename": filename, "start": start, "stop": stop } ];
-            else:
-              self.manifest[path].append({ "filename": filename, "start": start, "stop": stop });
+          if (table.cols.time.is_indexed):
+            start = table.cols.time[table.colindexes["time"][0]];
+            stop = table.cols.time[table.colindexes["time"][-1]];
+          else:
+            start = min(row["time"] for row in table);
+            stop = max(row["time"] for row in table);
+          if (not self.manifest.has_key(path)):
+            self.manifest[path] = [ { "filename": filename, "start": start, "stop": stop } ];
+          else:
+            self.manifest[path].append({ "filename": filename, "start": start, "stop": stop });
 
-            if (location_name not in self.manifest["ROOT"]):
-              self.manifest["ROOT"][location_name] = { };
-            if (group_name not in self.manifest["ROOT"][location_name]):
-              self.manifest["ROOT"][location_name][group_name] = { };
-            if (table_name not in self.manifest["ROOT"][location_name][group_name]):
-              self.manifest["ROOT"][location_name][group_name][table_name] = [ start, stop ];
-            else:
-              ( old_start, old_stop ) = self.manifest["ROOT"][location_name][group_name][table_name];
-              self.manifest["ROOT"][location_name][group_name][table_name] = [ np.minimum(start, old_start), np.maximum(stop, old_stop) ];
+          if (location_name not in self.manifest["ROOT"]):
+            self.manifest["ROOT"][location_name] = { };
+          if (group_name not in self.manifest["ROOT"][location_name]):
+            self.manifest["ROOT"][location_name][group_name] = { };
+          if (table_name not in self.manifest["ROOT"][location_name][group_name]):
+            self.manifest["ROOT"][location_name][group_name][table_name] = [ start, stop ];
+          else:
+            ( old_start, old_stop ) = self.manifest["ROOT"][location_name][group_name][table_name];
+            self.manifest["ROOT"][location_name][group_name][table_name] = [ np.minimum(start, old_start), np.maximum(stop, old_stop) ];
     fd.close();
 
 ################################################################################
