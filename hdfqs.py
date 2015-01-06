@@ -21,6 +21,7 @@ This module contains the class and all functions required for reading data from 
 
 import numpy as np;
 import os;
+import pandas as pd;
 import re;
 import tables;
 
@@ -446,10 +447,16 @@ class HDFQS:
 ################################################################################
 #################################### WRITE #####################################
 ################################################################################
-  def write(self, path, df, name="", filters=None, units=None):
+  def write(self, path, df, tz=None, data=None, cols=None, name="", filters=None, units=None):
     if (self.fd is None):
       raise(NoFileOpenException);
 
+    # Generate DataFrame from data
+    if ((tz is not None) and (data is not None) and (cols is not None)):
+      tm = df;
+      df = self.generate_df(tm, tz, data, cols);
+    elif ((tz is not None) or (data is not None) or (cols is not None)):
+      raise InconsistentArgumentsException("Must either pass DataFrame by itself, or pass time, timezone, data, columns");
     try: # Check if table exists
       t = self.fd.getNode(path);
     except tables.exceptions.NoSuchNodeError:
@@ -468,6 +475,19 @@ class HDFQS:
       t.attrs["units"] = units;
     # Add data
     t.append(df.values.tolist());
+
+  def generate_df(self, tm, tz, data, cols):
+    # Check consistency of dimensions
+    if ((tm.shape[0] != tz.shape[0]) or (tm.shape[0] != data.shape[0]) or (data.shape[1] != len(cols))):
+      raise InconsistentDimensionsException("Dimensions of tm %s, tz %s, data %s, cols (%d) not consistent" % ( str(tm.shape), str(tz.shape), str(data.shape), len(cols) ));
+
+    tm = tm.astype(np.int64);
+    tz = tz.astype(np.int8);
+    df = pd.DataFrame(dict(time=tm, tz=tz));
+    for i in range(len(cols)):
+      df[cols[i]] = data[:,i];
+
+    return df;
 
 ################################################################################
 ################################## OPEN FILE ###################################
@@ -496,4 +516,10 @@ class HDFQS:
 ################################## EXCEPTIONS ##################################
 ################################################################################
 class NoFileOpenException(Exception):
+  pass;
+
+class InconsistentArgumentsException(Exception):
+  pass;
+
+class InconsistentDimensionsException(Exception):
   pass;
