@@ -435,7 +435,38 @@ class HDFQS:
         table = x.group(3);
       return self.manifest["ROOT"][location][category][table];
     except:
-      print("Invallid location/category/table: \"%s\", \"%s\", \"%s\"" % ( location, category, table ));
+      print("Invalid location/category/table: \"%s\", \"%s\", \"%s\"" % ( location, category, table ));
+      return [ ];
+
+################################################################################
+#################################### EXISTS ####################################
+################################################################################
+  def exists(self, location, category=None, table=None):
+    try:
+      if ((category is None) and (table is None) and (location[0] == "/")):
+        tokens = location.split("/");
+        location = tokens[1];
+        if (len(tokens) > 2):
+          category = tokens[2];
+        else:
+          category = None;
+        if (len(tokens) > 3):
+          table = tokens[3];
+        else:
+          table = None;
+      try:
+        if (table is not None):
+          temp = self.manifest["ROOT"][location][category][table];
+        elif (category is not None):
+          temp = self.manifest["ROOT"][location][category];
+        else:
+          temp = self.manifest["ROOT"][location];
+        return True;
+      except KeyError:
+        return False;
+    except:
+      print("Invalid location/category/table: \"%s\", \"%s\", \"%s\"" % ( location, category, table ));
+      return False;
 
 ################################################################################
 ################################## OPEN FILE ###################################
