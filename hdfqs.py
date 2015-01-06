@@ -21,6 +21,7 @@ This module contains the class and all functions required for reading data from 
 
 import numpy as np;
 import os;
+import pandas as pd;
 import re;
 import tables;
 
@@ -45,6 +46,8 @@ class HDFQS:
     """
 
     self.path = path;
+    self.fd = None;
+    self.filters = tables.Filters(complevel=1, complib="zlib", shuffle=True, fletcher32=True);
     self.manifest_path = os.path.join(self.path, "manifest.py");
     if (os.path.exists(self.manifest_path)):
       temp = { };
@@ -89,28 +92,30 @@ class HDFQS:
             continue;
           if (table.shape == ( 0, )):
             continue;
-          tm = [ x["time"] for x in table ];
           location_name = location._v_name;
           group_name = group._v_name;
           table_name = table.name;
           path = "/" + location_name + "/" + group_name + "/" + table_name;
-          if (len(tm) > 0):
-            start = tm[0];
-            stop = tm[-1];
-            if (not self.manifest.has_key(path)):
-              self.manifest[path] = [ { "filename": filename, "start": start, "stop": stop } ];
-            else:
-              self.manifest[path].append({ "filename": filename, "start": start, "stop": stop });
+          if (table.cols.time.is_indexed):
+            start = table.cols.time[table.colindexes["time"][0]];
+            stop = table.cols.time[table.colindexes["time"][-1]];
+          else:
+            start = min(row["time"] for row in table);
+            stop = max(row["time"] for row in table);
+          if (not self.manifest.has_key(path)):
+            self.manifest[path] = [ { "filename": filename, "start": start, "stop": stop } ];
+          else:
+            self.manifest[path].append({ "filename": filename, "start": start, "stop": stop });
 
-            if (location_name not in self.manifest["ROOT"]):
-              self.manifest["ROOT"][location_name] = { };
-            if (group_name not in self.manifest["ROOT"][location_name]):
-              self.manifest["ROOT"][location_name][group_name] = { };
-            if (table_name not in self.manifest["ROOT"][location_name][group_name]):
-              self.manifest["ROOT"][location_name][group_name][table_name] = [ start, stop ];
-            else:
-              ( old_start, old_stop ) = self.manifest["ROOT"][location_name][group_name][table_name];
-              self.manifest["ROOT"][location_name][group_name][table_name] = [ np.minimum(start, old_start), np.maximum(stop, old_stop) ];
+          if (location_name not in self.manifest["ROOT"]):
+            self.manifest["ROOT"][location_name] = { };
+          if (group_name not in self.manifest["ROOT"][location_name]):
+            self.manifest["ROOT"][location_name][group_name] = { };
+          if (table_name not in self.manifest["ROOT"][location_name][group_name]):
+            self.manifest["ROOT"][location_name][group_name][table_name] = [ start, stop ];
+          else:
+            ( old_start, old_stop ) = self.manifest["ROOT"][location_name][group_name][table_name];
+            self.manifest["ROOT"][location_name][group_name][table_name] = [ np.minimum(start, old_start), np.maximum(stop, old_stop) ];
     fd.close();
 
 ################################################################################
@@ -432,5 +437,126 @@ class HDFQS:
         table = x.group(3);
       return self.manifest["ROOT"][location][category][table];
     except:
-      print("Invallid location/category/table: \"%s\", \"%s\", \"%s\"" % ( location, category, table ));
+      print("Invalid location/category/table: \"%s\", \"%s\", \"%s\"" % ( location, category, table ));
+      return [ ];
 
+################################################################################
+#################################### EXISTS ####################################
+################################################################################
+  def exists(self, location, category=None, table=None):
+    try:
+      if ((category is None) and (table is None) and (location[0] == "/")):
+        tokens = location.split("/");
+        location = tokens[1];
+        if (len(tokens) > 2):
+          category = tokens[2];
+        else:
+          category = None;
+        if (len(tokens) > 3):
+          table = tokens[3];
+        else:
+          table = None;
+      try:
+        if (table is not None):
+          temp = self.manifest["ROOT"][location][category][table];
+        elif (category is not None):
+          temp = self.manifest["ROOT"][location][category];
+        else:
+          temp = self.manifest["ROOT"][location];
+        return True;
+      except KeyError:
+        return False;
+    except:
+      print("Invalid location/category/table: \"%s\", \"%s\", \"%s\"" % ( location, category, table ));
+      return False;
+
+################################################################################
+################################## OPEN FILE ###################################
+################################################################################
+  def open_file(self, filename):
+    filename = os.path.join(self.path, filename);
+    self.fd = tables.openFile(filename, mode="a");
+
+################################################################################
+#################################### WRITE #####################################
+################################################################################
+  def write(self, path, df, tz=None, data=None, cols=None, name="", filters=None, units=None):
+    if (self.fd is None):
+      raise(NoFileOpenException);
+
+    # Generate DataFrame from data
+    if ((tz is not None) and (data is not None) and (cols is not None)):
+      tm = df;
+      df = self.generate_df(tm, tz, data, cols);
+    elif ((tz is not None) or (data is not None) or (cols is not None)):
+      raise InconsistentArgumentsException("Must either pass DataFrame by itself, or pass time, timezone, data, columns");
+    try: # Check if table exists
+      t = self.fd.getNode(path);
+    except tables.exceptions.NoSuchNodeError:
+      # Parse where and name
+      temp = path.rfind("/");
+      where = path[:temp];
+      table_name = path[temp+1:];
+      # Create description
+      descr = HDFQS.create_description(df);
+      # Create table
+      if (filters is None):
+        filters = self.filters;
+      t = self.fd.createTable(where, table_name, descr, name, filters=filters, createparents=True);
+      if (units is None):
+        units = { "time": "ns since the epoch", "tz": "15 min blocks from UTC" };
+      t.attrs["units"] = units;
+    # Add data
+    t.append(df.values.tolist());
+    # Create index
+    if (not t.cols.time.is_indexed):
+      t.cols.time.create_csindex();
+    t.flush();
+
+  def generate_df(self, tm, tz, data, cols):
+    # Check consistency of dimensions
+    if ((tm.shape[0] != tz.shape[0]) or (tm.shape[0] != data.shape[0]) or (data.shape[1] != len(cols))):
+      raise InconsistentDimensionsException("Dimensions of tm %s, tz %s, data %s, cols (%d) not consistent" % ( str(tm.shape), str(tz.shape), str(data.shape), len(cols) ));
+
+    tm = tm.astype(np.int64);
+    tz = tz.astype(np.int8);
+    df = pd.DataFrame(dict(time=tm, tz=tz));
+    for i in range(len(cols)):
+      df[cols[i]] = data[:,i];
+
+    return df;
+
+################################################################################
+################################## OPEN FILE ###################################
+################################################################################
+  def close_file(self):
+    if (self.fd is not None):
+      self.fd.close();
+      self.fd = None;
+
+################################################################################
+############################## CREATE DESCRIPTION ##############################
+################################################################################
+  @staticmethod
+  def create_description(df):
+    descr = dict();
+    cols = df.columns.tolist();
+    dtypes = df.dtypes.tolist();
+    for i in range(len(cols)):
+      col = cols[i];
+      col_dtype = dtypes[i];
+      descr[col] = tables.Col.from_dtype(col_dtype, pos=i);
+
+    return descr;
+
+################################################################################
+################################## EXCEPTIONS ##################################
+################################################################################
+class NoFileOpenException(Exception):
+  pass;
+
+class InconsistentArgumentsException(Exception):
+  pass;
+
+class InconsistentDimensionsException(Exception):
+  pass;
