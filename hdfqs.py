@@ -508,6 +508,10 @@ class HDFQS:
       t.attrs["units"] = units;
     # Add data
     t.append(df.values.tolist());
+    # Create index
+    if (not t.cols.time.is_indexed):
+      t.cols.time.create_csindex();
+    t.flush();
 
   def generate_df(self, tm, tz, data, cols):
     # Check consistency of dimensions
