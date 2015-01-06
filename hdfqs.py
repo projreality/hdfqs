@@ -75,8 +75,9 @@ class HDFQS:
     """
 
     filename = os.path.join(self.path, filename); # If an absolute path is given, it does not get appended to the HDFQS path
+    relpath = self.get_relpath(filename);
 
-    if (filename in self.manifest["FILES"]):
+    if (relpath in self.manifest["FILES"]):
       return;
 
     try:
@@ -84,7 +85,7 @@ class HDFQS:
     except IOError:
       print "Error opening file %s" % ( filename );
       return;
-    self.manifest["FILES"][filename] = True;
+    self.manifest["FILES"][relpath] = True;
     for location in fd.root:
       for group in location:
         for table in group:
@@ -103,9 +104,9 @@ class HDFQS:
             start = min(row["time"] for row in table);
             stop = max(row["time"] for row in table);
           if (not self.manifest.has_key(path)):
-            self.manifest[path] = [ { "filename": filename, "start": start, "stop": stop } ];
+            self.manifest[path] = [ { "filename": relpath, "start": start, "stop": stop } ];
           else:
-            self.manifest[path].append({ "filename": filename, "start": start, "stop": stop });
+            self.manifest[path].append({ "filename": relpath, "start": start, "stop": stop });
 
           if (location_name not in self.manifest["ROOT"]):
             self.manifest["ROOT"][location_name] = { };
@@ -147,7 +148,8 @@ class HDFQS:
             i=i+1;
             continue;
           full_path = os.path.join(subdir, filename);
-          if (full_path not in self.manifest["FILES"]):
+          relpath = self.get_relpath(full_path);
+          if (relpath not in self.manifest["FILES"]):
             print full_path;
             self.register(full_path);
             changed = True;
@@ -174,6 +176,15 @@ class HDFQS:
 
     self.manifest = { "FILES": { }, "ROOT": { } };
     self.register_directory();
+
+################################################################################
+################################# GET RELPATH ##################################
+################################################################################
+  def get_relpath(self, path):
+    if (path.startswith(self.path)):
+      return os.path.relpath(path, self.path);
+    else:
+      return path;
 
 ################################################################################
 #################################### QUERY #####################################
@@ -237,7 +248,7 @@ class HDFQS:
     files = self.query(path, start, stop);
     data = None;
     for f in files:
-      fd = tables.openFile(f, mode="r");
+      fd = tables.openFile(os.path.join(self.path, f), mode="r");
       t = fd.getNode(path);
       if (len(t) < 2):
         continue;
