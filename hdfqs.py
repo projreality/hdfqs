@@ -411,6 +411,11 @@ class HDFQS:
     -------
     categories : str
       List containing all categories within the specified location.
+
+    Raises
+    ------
+    NonexistantLocationException
+      Specified path or :samp:`/{location}` does not exist.
     """
 
     try:
@@ -418,8 +423,7 @@ class HDFQS:
         location = location[1:];
       return self.manifest["ROOT"][location].keys();
     except:
-      print("Invalid location \"%s\"" % ( location ));
-      return [ ];
+      raise NonexistantLocationException("Invalid location \"%s\"" % ( location ));
 
 ################################################################################
 ################################## GET TABLES ##################################
@@ -447,6 +451,11 @@ class HDFQS:
     -------
     tables : str
       List containing all tables within the specified location.
+
+    Raises
+    ------
+    NonexistantLocationException
+      Specified path or :samp:`/{location}/{category}` does not exist.
     """
 
     try:
@@ -456,8 +465,7 @@ class HDFQS:
         category = x.group(2);
       return self.manifest["ROOT"][location][category].keys();
     except:
-      print("Invalid location/category: \"%s\", \"%s\"" % ( location, category ));
-      return [ ];
+      raise NonexistantLocationException("Invalid location/category: \"%s\", \"%s\"" % ( location, category ));
 
 ################################################################################
 ################################ GET TIME RANGE ################################
@@ -487,6 +495,11 @@ class HDFQS:
     -------
     time_range : list
       List containing minuimum time as element 0, maximum time as element 1.
+
+    Raises
+    ------
+    NonexistantLocationException
+      Specified path or :samp:`/{location}/{category}/{table}` does not exist.
     """
 
     try:
@@ -497,8 +510,7 @@ class HDFQS:
         table = x.group(3);
       return self.manifest["ROOT"][location][category][table];
     except:
-      print("Invalid location/category/table: \"%s\", \"%s\", \"%s\"" % ( location, category, table ));
-      return [ ];
+      raise NonexistantLocationException("Invalid location/category/table: \"%s\", \"%s\", \"%s\"" % ( location, category, table ));
 
 ################################################################################
 #################################### EXISTS ####################################
@@ -530,6 +542,11 @@ class HDFQS:
     -------
     existance : bool
       True if specified location/category/table exists, False otherwise.
+
+    Raises
+    ------
+    NonexistantLocationException
+      Specified path, :samp:`/{location}`, :samp:`/{location}/{category}`, or :samp:`/{location}/{category}/{table}` does not exist.
     """
 
     try:
@@ -555,8 +572,7 @@ class HDFQS:
       except KeyError:
         return False;
     except:
-      print("Invalid location/category/table: \"%s\", \"%s\", \"%s\"" % ( location, category, table ));
-      return False;
+      raise NonexistantLocationException("Invalid location/category/table: \"%s\", \"%s\", \"%s\"" % ( location, category, table ));
 
 ################################################################################
 ################################## OPEN FILE ###################################
