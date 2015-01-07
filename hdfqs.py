@@ -414,7 +414,7 @@ class HDFQS:
 
     Raises
     ------
-    NonexistantLocationException
+    NonexistantLocationException : :class:`NonexistantLocationException`
       Specified path or :samp:`/{location}` does not exist.
     """
 
@@ -454,7 +454,7 @@ class HDFQS:
 
     Raises
     ------
-    NonexistantLocationException
+    NonexistantLocationException : :class:`NonexistantLocationException`
       Specified path or :samp:`/{location}/{category}` does not exist.
     """
 
@@ -498,7 +498,7 @@ class HDFQS:
 
     Raises
     ------
-    NonexistantLocationException
+    NonexistantLocationException : :class:`NonexistantLocationException`
       Specified path or :samp:`/{location}/{category}/{table}` does not exist.
     """
 
@@ -545,7 +545,7 @@ class HDFQS:
 
     Raises
     ------
-    NonexistantLocationException
+    NonexistantLocationException : :class:`NonexistantLocationException`
       Specified path, :samp:`/{location}`, :samp:`/{location}/{category}`, or :samp:`/{location}/{category}/{table}` does not exist.
     """
 
@@ -646,9 +646,9 @@ class HDFQS:
 
     Raises
     ------
-    NoFileOpenException
+    NoFileOpenException : :class:`NoFileOpenException`
       :literal:`write` was called before :meth:`open_file`, or after :meth:`close_file`.
-    InconsistentArgumentsException:
+    InconsistentArgumentsException : :class:`InconsistentArgumentsException`
       If writing a Pandas DataFrame, must omit :literal:`tz`, :literal:`data`, and :literal:`cols`. If writing numpy arrays, must specify :literal:`tz`, :literal:`data`, and :literal:`cols`.
     """
 
@@ -778,7 +778,7 @@ class HDFQS:
 
     Raises
     ------
-    InconsistentDimensionsException
+    InconsistentDimensionsException : :class:`InconsistentDimensionsException`
       Dimensions of :literal:`time`, :literal:`tz`, :literal:`data`, and/or :literal:`cols` are not consistent. See Parameters above, or summary table under :meth:`write`.
     """
 

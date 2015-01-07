@@ -7,3 +7,13 @@ HDFQS Python Library API
     :special-members:
     :members:
 
+Exceptions
+----------
+
+.. autoclass:: NonexistantLocationException
+
+.. autoclass:: NoFileOpenException
+
+.. autoclass:: InconsistentArgumentsException
+
+.. autoclass:: InconsistentDimensionsException
