@@ -642,7 +642,7 @@ class HDFQS:
     filters : tables.Filters
       PyTables filter for the table (passed to :literal:`tables.createTable`).
     units : dict
-      Units for each of the columns, including :literal:`time` and :literal:`tz`. The keys are the column names, the values are strings containing the units. This will be written to the table's :literal:`units` attribute. If not specified, a dict will be create with units specified for :literal:`time` and :literal:`tz` only.
+      Units for each of the columns, not including :literal:`time` and :literal:`tz`. The keys are the column names, the values are strings containing the units. Units for :literal:`time` and :literal:`tz` will be added automatically. This will be written to the table's :literal:`units` attribute. If not specified, a dict will be created with units specified for :literal:`time` and :literal:`tz` only.
 
     Raises
     ------
@@ -676,6 +676,11 @@ class HDFQS:
       t = self.fd.createTable(where, table_name, descr, name, filters=filters, createparents=True);
       if (units is None):
         units = { "time": "ns since the epoch", "tz": "15 min blocks from UTC" };
+      elif (type(units) == dict):
+        units["time"] = "ns since the epoch";
+        units["tz"] = "15 min blocks from UTC";
+      else:
+        raise Exception("units must be a dict");
       t.attrs["units"] = units;
     # Add data
     t.append(df.values.tolist());
