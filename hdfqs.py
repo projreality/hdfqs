@@ -61,7 +61,7 @@ class HDFQS:
 ################################################################################
 ################################### REGISTER ###################################
 ################################################################################
-  def register(self, filename):
+  def register(self, filename, write_manifest=True):
     """
     Register a file in the HDFQS manifest.
 
@@ -73,6 +73,8 @@ class HDFQS:
     ----------
     filename : str
       Path of file to register. Can be relative to HDFQS root.
+    write_manifest : bool
+      Whether or not to write the updated manifest to the manifest file (default is True).
     """
 
     filename = os.path.join(self.path, filename); # If an absolute path is given, it does not get appended to the HDFQS path
@@ -116,6 +118,9 @@ class HDFQS:
             self.manifest["ROOT"][location_name][group_name][table_name] = [ np.minimum(start, old_start), np.maximum(stop, old_stop) ];
     fd.close();
 
+    if (write_manifest):
+      self.write_manifest();
+
 ################################################################################
 ############################## REGISTER DIRECTORY ##############################
 ################################################################################
@@ -148,18 +153,16 @@ class HDFQS:
           relpath = self.get_relpath(full_path);
           if (relpath not in self.manifest["FILES"]):
             print full_path;
-            self.register(full_path);
+            self.register(full_path, write_manifest=False);
             changed = True;
       elif (is_hdf5.match(subdir)): # Is an HDF5 file in the root
         if (subdir not in self.manifest["FILES"]):
           print subdir;
-          self.register(subdir);
+          self.register(subdir, write_manifest=False);
           changed = True;
 
     if ((changed) or (not os.path.exists(self.manifest_path))):
-      fd = open(self.manifest_path, "w");
-      fd.write("manifest = " + repr(self.manifest) + "\n");
-      fd.close();
+      self.write_manifest();
 
 ################################################################################
 ############################### RE-REGISTER ALL ################################
@@ -798,6 +801,17 @@ class HDFQS:
       df[cols[i]] = data[:,i];
 
     return df;
+
+################################################################################
+################################ WRITE MANIFEST ################################
+  def write_manifest(self):
+    """
+    Write manifest to manifest file.
+    """
+
+    fd = open(self.manifest_path, "w");
+    fd.write("manifest = " + repr(self.manifest) + "\n");
+    fd.close();
 
 ################################################################################
 ############################## CREATE DESCRIPTION ##############################
