@@ -103,7 +103,7 @@ Now that we're done writing to the file, we will register it into the manifest::
 
   fd.register("2015/temperature.h5");
 
-Next, we'll read data back from HDFQS::
+Next, we'll read the data from HDFQS::
 
   start = time.mktime(time.strptime("1/2/2015", "%m/%d/%Y"))*1E9;
   stop = time.mktime(time.strptime("1/3/2015", "%m/%d/%Y"))*1E9;
@@ -119,19 +119,19 @@ The plot should be identical to the plot above.
 Writing a Pandas DataFrame to HDFQS
 -----------------------------------
 
-The example above was more simple, as there was only one data column. Data with multiple columns can be written fairly easily as well. However, a problem may arise when the data columns have different types.
+The example above only had one data column. Data with multiple columns can be written fairly easily as well. However, a problem may arise when the data columns have different types.
 
-For example, the above temperature data can also include a status word from the device measuring temperature, which could be used as an indication of the validity of the data. Say the status word only takes values from 0 to 15. It would be a waste to use :literal:`np.float64` for that column (resulting in :literal:`tables.Float64Col` in the table), and may also result in roundoff error in the floating-point value::
+For example, the above temperature data can also include a status word from the device measuring temperature, which could be used as an indication of the validity of the data. Say the status word only takes values from 0 to 15. It would be a waste to use :literal:`np.float64` for that column (resulting in :literal:`tables.Float64Col` in the table), and it may also result in roundoff error in the floating-point value. ::
 
   status = np.zeros(N, dtype=np.int8);
-  status[30] = 1;
+  status[30] = 1; # Invalid data point here
   data[30,0] = 0;
 
 Note that if we directly concatenate status to data, it will take the :literal:`np.float64` type::
 
   print(np.c_[data, status].dtype);
 
-Instead, we will create a Pandas DataFrame for the data. Note that we manually add each column to enforce column order (passing a :literal:`dict` will result in the columns being added alphabetically).
+Instead, we will create a Pandas DataFrame for the data. Note that we manually add each column to enforce column order (passing a :literal:`dict` will result in the columns being added alphabetically - the DataFrame column order will become the table column order).
 
 ::
 
@@ -149,12 +149,12 @@ Now, we can pass the DataFrame directly to the :meth:`write` function::
   fd.close_file();
   fd.register("2015/temperature2.h5");
 
-Next, we read back the data::
+Next, we read the data from HDFQS::
 
   temperature = fd.load("/self/Environment/temperature2", start, stop);
   status = fd.load("/self/Environment/temperature2", start, stop, value_field="status");
 
-If we plot the data directly, the invalid data point is included in the plot::
+In this example with the invalid data point, if we plot the data directly, the invalid data point is included in the plot::
 
   plt.plot(temperature[:,0], temperature[:,1]);
   plt.title("Temperature over Time (with invalid data point)");
