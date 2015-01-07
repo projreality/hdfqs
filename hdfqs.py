@@ -81,11 +81,7 @@ class HDFQS:
     if (relpath in self.manifest["FILES"]):
       return;
 
-    try:
-      fd = tables.openFile(filename, mode="r");
-    except IOError:
-      print "Error opening file %s" % ( filename );
-      return;
+    fd = tables.openFile(filename, mode="r");
     self.manifest["FILES"][relpath] = True;
     for location in fd.root:
       for group in location:
@@ -354,12 +350,16 @@ class HDFQS:
       Earliest valid time, in ns since the epoch (default is 1/1/1971 00:00:00 UTC).
     index : bool
       Whether or not to create a completed-sorted index on the time column (Default is False).
+
+    Raises
+    ------
+    OSError
+      Specified path does not exist.
     """
 
     path = os.path.join(self.path, path);
     if (not os.path.exists(path)):
-      print("Invalid path - \"%s\"" % ( path ));
-      return;
+      raise OSError("Invalid path - \"%s\"" % ( path ));
     for filename in os.listdir(path):
       if ((filename == ".git") or (filename == "raw")):
         continue;
