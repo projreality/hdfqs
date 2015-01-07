@@ -16,7 +16,7 @@
 """
 HDFQS Python Library
 
-This module contains the class and all functions required for reading data from HDFQS data stores.
+This module contains the class and all functions required for reading from and writing to HDFQS data stores.
 """
 
 import numpy as np;
@@ -29,7 +29,7 @@ __version__ = "1.1.0";
 
 class HDFQS:
   """
-  This class wraps all functionality to read data from an HDFQS data store.
+  This class wraps all functionality to read from and write to an HDFQS data store.
   """
 
 ################################################################################
