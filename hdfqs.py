@@ -156,7 +156,7 @@ class HDFQS:
           self.register(subdir);
           changed = True;
 
-    if (changed):
+    if ((changed) or (not os.path.exists(self.manifest_path))):
       fd = open(self.manifest_path, "w");
       fd.write("manifest = " + repr(self.manifest) + "\n");
       fd.close();
