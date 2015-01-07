@@ -25,6 +25,8 @@ import pandas as pd;
 import re;
 import tables;
 
+__version__ = "1.1.0";
+
 class HDFQS:
   """
   This class wraps all functionality to read data from an HDFQS data store.
