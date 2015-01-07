@@ -254,6 +254,11 @@ class HDFQS:
     -------
     fields : list
       List containing the fields of the data table.
+
+    Raises
+    ------
+    Exception
+      Specified path does not exist.
     """
 
     files = self.query(path, 0, np.Inf);
@@ -602,7 +607,7 @@ class HDFQS:
 
     where N is the number of datapoints, P is the number of data columns (excluding time and tz).
 
-    Note that :literal:`open_file` must have been called previously to specify a file to write to.
+    Note that :meth:`open_file` must have been called previously to specify a file to write to.
 
     Parameters
     ----------
@@ -622,6 +627,13 @@ class HDFQS:
       PyTables filter for the table (passed to :literal:`tables.createTable`).
     units : dict
       Units for each of the columns, including :literal:`time` and :literal:`tz`. The keys are the column names, the values are strings containing the units. This will be written to the table's :literal:`units` attribute. If not specified, a dict will be create with units specified for :literal:`time` and :literal:`tz` only.
+
+    Raises
+    ------
+    NoFileOpenException
+      :literal:`write` was called before :meth:`open_file`, or after :meth:`close_file`.
+    InconsistentArgumentsException:
+      If writing a Pandas DataFrame, must omit :literal:`tz`, :literal:`data`, and :literal:`cols`. If writing numpy arrays, must specify :literal:`tz`, :literal:`data`, and :literal:`cols`.
     """
 
     if (self.fd is None):
@@ -747,6 +759,11 @@ class HDFQS:
     -------
     df : pd.DataFrame
       Pandas DataFrame containing the data.
+
+    Raises
+    ------
+    InconsistentDimensionsException
+      Dimensions of :literal:`time`, :literal:`tz`, :literal:`data`, and/or :literal:`cols` are not consistent. See Parameters above, or summary table under :meth:`write`.
     """
 
     # Check consistency of dimensions
@@ -792,6 +809,9 @@ class HDFQS:
 ################################################################################
 ################################## EXCEPTIONS ##################################
 ################################################################################
+class NonexistantLocationException(Exception):
+  pass;
+
 class NoFileOpenException(Exception):
   pass;
 
