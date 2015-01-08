@@ -267,7 +267,7 @@ class HDFQS:
       raise Exception("Nonexistant path: \"%s\"" % path);
     else:
       filename = files[0];
-      fd = tables.openFile(filename);
+      fd = tables.openFile(os.path.join(self.path, filename));
       table = fd.getNode(path);
       fields = table.colnames;
       fd.close();
