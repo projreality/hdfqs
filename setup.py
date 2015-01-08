@@ -5,7 +5,7 @@ long_description = fd.read();
 fd.close();
 
 setup(name              = "hdfqs",
-      version           = "1.0.0",
+      version           = "1.1.0",
       py_modules        = [ "hdfqs" ],
       author            = "Samuel Li",
       author_email      = "sam@projreality.com",

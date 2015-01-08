@@ -11,6 +11,7 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
+   downloads.rst
    installation.rst
    examples.rst
    hdfqs.rst
